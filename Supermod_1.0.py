@@ -9,7 +9,7 @@ from os import getenv
 from dotenv import load_dotenv
 
 # Import newsletter functions
-import newsletter
+import releases
 
 # Libraries for various functions
 from random import choice
@@ -80,6 +80,7 @@ def qotd_get():
     return question[0].strip("'")
 
 
+# QOTD loop
 @tasks.loop(minutes=60)
 async def qotd():
     print(
@@ -99,7 +100,7 @@ async def qotd():
 
 # Setting
 bot.news_channel = bot.channel
-bot.news_day = "Sunday"
+bot.news_day = "Monday"
 news_sh = gsa.open_by_url(getenv("NEWS_SHEET_URL"))
 
 
@@ -146,11 +147,25 @@ async def news(ctx, date_str=None):
 
     sheet = str(date.year) + " OL Rock Albums List"
     sheet_data = news_sh.worksheet(sheet).get_all_values()
-    messages = newsletter.newsletter_create(sheet_data, date)
-    for message in messages:
-        await ctx.send(message)
+    posts = releases.newsletter_create(sheet_data, date)
+    for post in posts:
+        await ctx.send(post)
 
 
+@bot.command()
+async def news_full(ctx, *, message=None):
+    if message == None:
+        await ctx.send("What will be this week's newsletter message?")
+        return
+    else:
+        date = pendulum.today()
+        sheet_data = news_sh.sheet1.get_all_values()
+        posts = releases.newsletter_create(sheet_data, date, message)
+        for post in posts:
+            await ctx.send(post)
+
+
+# Newsletter loop
 @tasks.loop(hours=24)
 async def weekly_newsletter():
     print(
@@ -162,9 +177,9 @@ async def weekly_newsletter():
         channel = bot.get_channel(bot.news_channel)
         date = pendulum.today()
         sheet_data = news_sh.sheet1.get_all_values()
-        messages = newsletter.newsletter_create(sheet_data, date)
-        for message in messages:
-            await channel.send(message)
+        posts = releases.newsletter_create(sheet_data, date)
+        for post in posts:
+            await channel.send(post)
         print(
             "Newsletter has been sent (day: "
             + pendulum.now().strftime("%A, %Y-%m-%d")

@@ -61,7 +61,7 @@ def news_get(sheet_data, week):
     return albums
 
 
-def newsletter_create(sheet_data, date):
+def newsletter_create(sheet_data, date, message=None):
     week = week_no(date)
     albums = news_get(sheet_data, week)
     album_lengths = []
@@ -92,27 +92,40 @@ def newsletter_create(sheet_data, date):
 
     load_dotenv()
     title_day = end_of_week(date, week)
-    message_full = (
-        "**__Omnivoracious Listeners New Music Newsletter (Week of "
-        + title_day.strftime("%B")
-        + " "
-        + title_day.strftime("%#d")
-        + ordinal(title_day.day)
-        + "):__**\n\n"
-        + "\n\n".join(albums_by_length)
-        + "\n\n*Mace's message here*\n<"
-        + getenv("NEWS_SHEET_URL")
-        + ">\n\nFeel free to contribute to our ever-growing newsletter:\n<"
-        + getenv("NEWS_FORM_URL")
-        + ">\n\nHappy Listening!"
-    )
-    if len(message_full) > 2000:
+    if message == None:
+        post_full = (
+            "**__Omnivoracious Listeners New Music Newsletter (Week of "
+            + title_day.strftime("%B")
+            + " "
+            + title_day.strftime("%#d")
+            + ordinal(title_day.day)
+            + "):__**\n\n"
+            + "\n\n".join(albums_by_length)
+        )
+    else:
+        post_full = (
+            "**__Omnivoracious Listeners New Music Newsletter (Week of "
+            + title_day.strftime("%B")
+            + " "
+            + title_day.strftime("%#d")
+            + ordinal(title_day.day)
+            + "):__**\n\n"
+            + "\n\n".join(albums_by_length)
+            + "\n\n"
+            + message
+            + "\n<"
+            + getenv("NEWS_SHEET_URL")
+            + ">\n\nFeel free to contribute to our ever-growing newsletter:\n<"
+            + getenv("NEWS_FORM_URL")
+            + ">\n\nHappy Listening!"
+        )
+    if len(post_full) > 2000:
         i = 1
-        while message_full[2000 - i] != "\n":
+        while post_full[2000 - i] != "\n":
             i = i + 1
         split_at = 2000 - i
-        messages = [message_full[:split_at], message_full[split_at:]]
+        posts = [post_full[:split_at], post_full[split_at:]]
     else:
-        messages = [message_full]
+        posts = [post_full]
 
-    return messages
+    return posts
