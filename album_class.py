@@ -16,7 +16,7 @@ class album:
         self.artists = handle_input(artists)
         self.title = remove_space(title)
         self.genres = handle_input(genres)
-        self.length = remove_space(length)
+        self.length = handle_length(length)
         self.release_date = remove_space(release_date)
         self.countries = handle_input(countries)
         self.FFO = handle_input(FFO)
@@ -42,3 +42,27 @@ def remove_space(string):
 
 def handle_input(strings):
     return [remove_space(string) for string in strings.split(", ")]
+
+
+def handle_length(length):
+    length = remove_space(length)
+    if length == "Live":
+        return "Live Album"
+    elif length == "Other":
+        return "Other Release"
+    elif length == "Deluxe":
+        return "Deluxe Edition"
+    elif length == "Greatest Hits":
+        return "Greatest Hits Album"
+    elif length == "Cover":
+        return "Cover Album"
+    elif length == "Covers":
+        return "Cover Album"
+    elif length == "Covers Album":
+        return "Cover Album"
+    elif length == "Anniversary":
+        return "Anniversary Edition"
+    elif length == "Unreleased":
+        return "Unreleased Album"
+    else:
+        return length

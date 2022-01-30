@@ -18,17 +18,6 @@ def end_of_week(date, week):
     return date.start_of("year").add(days=days)
 
 
-def ordinal(num):
-    if num % 10 == 1:
-        return "st"
-    if num % 10 == 2:
-        return "nd"
-    if num % 10 == 3:
-        return "rd"
-    else:
-        return "th"
-
-
 def week_check(value, week):
     try:
         if week_no(pendulum.from_format(value, "M/D/YYYY")) == week:
@@ -79,8 +68,8 @@ def newsletter_create(sheet_data, date, message=None):
     for length in album_lengths:
         albums_by_length.append(
             "__*New "
-            + length
-            + "s:*__\n"
+            + plural(length)
+            + ":*__\n"
             + "\n".join(
                 [
                     album.news_format()
@@ -119,13 +108,38 @@ def newsletter_create(sheet_data, date, message=None):
             + getenv("NEWS_FORM_URL")
             + ">\n\nHappy Listening!"
         )
-    if len(post_full) > 2000:
+
+    return post_split(post_full)
+
+
+def post_split(long_post):
+    posts = [long_post]
+    while len(long_post) > 2000:
         i = 1
-        while post_full[2000 - i] != "\n":
+        while long_post[2000 - i] != "\n":
             i = i + 1
         split_at = 2000 - i
-        posts = [post_full[:split_at], post_full[split_at:]]
-    else:
-        posts = [post_full]
+        posts.remove(long_post)
+        posts.extend([long_post[:split_at], long_post[split_at:]])
+        long_post = long_post[split_at:]
 
     return posts
+
+
+# Proper grammar for the newsletter:
+def ordinal(num):
+    if num % 10 == 1:
+        return "st"
+    if num % 10 == 2:
+        return "nd"
+    if num % 10 == 3:
+        return "rd"
+    else:
+        return "th"
+
+
+def plural(string):
+    if string[-1] in ["s", "sh", "ch", "x", "z"]:
+        return string + "es"
+    else:
+        return string + "s"
