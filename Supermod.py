@@ -19,7 +19,7 @@ import pendulum
 bot = commands.Bot(command_prefix=".")
 
 # Connect to Google service account
-gsa = gspread.service_account()
+gsa = gspread.service_account_from_dict(getenv("SERVICE_ACCOUNT_CRED"))
 
 # Load hidden data from .env
 load_dotenv()
