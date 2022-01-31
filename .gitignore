@@ -1,5 +1,4 @@
 __pycache__
 .vscode
 .env
-service_account.json
 Supermod_local.py

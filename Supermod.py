@@ -5,9 +5,8 @@ from discord.ext import tasks, commands
 import gspread
 import json
 
-# Libraries to load hidden data from .env
+# Library to load hidden config vars
 from os import getenv
-from dotenv import load_dotenv
 
 # Import newsletter functions
 import releases
@@ -21,9 +20,6 @@ bot = commands.Bot(command_prefix=".")
 
 # Connect to Google service account
 gsa = gspread.service_account_from_dict(json.loads(getenv("SERVICE_ACCOUNT_CRED")))
-
-# Load hidden data from .env
-load_dotenv()
 
 # Testing channel
 bot.channel = int(getenv("TESTING_CHANNEL"))
