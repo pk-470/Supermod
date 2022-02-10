@@ -8,7 +8,7 @@ from os import getenv, listdir
 import pendulum
 
 # Connect to Discord and define prefix
-bot = commands.Bot(command_prefix=".", case_insensitive=True)
+bot = commands.Bot(command_prefix=",", case_insensitive=True)
 
 # Choose the mode (ON to run the bot locally, OFF to run on Heroku)
 local_mode = "OFF"
