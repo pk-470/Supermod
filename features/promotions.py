@@ -1,6 +1,7 @@
 # Libraries for Discord
 from discord import Embed, Color
 from discord.ext import commands, tasks
+from grpc import channel_ready_future
 
 # Google spreadsheets
 import gspread
@@ -51,8 +52,8 @@ class Promotions(
         dates = [promo[4] + "/" + promo[5] for promo in promos_wks.get_all_values()[1:]]
         new_promo = []
 
-        def check(conf):
-            return conf.author == ctx.author
+        def check(resp):
+            return resp.author == ctx.author and resp.channel == ctx.channel
 
         try:
             await ctx.send("Submitter Type (Creator / Partner):")

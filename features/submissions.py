@@ -160,7 +160,7 @@ class Album_Submissions(
 
                     # Confirm rejection
                     def check(conf):
-                        return conf.author == ctx.author
+                        return conf.author == ctx.author and conf.channel == ctx.channel
 
                     confirm = await self.bot.wait_for(
                         "message", timeout=30.0, check=check
