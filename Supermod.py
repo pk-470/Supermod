@@ -16,7 +16,7 @@ local_mode = "OFF"
 with open("mode_switch.txt", "w") as switch:
     switch.write(local_mode)
 
-if local_mode == "OFF":
+if local_mode == "ON":
     from dotenv import load_dotenv
 
     load_dotenv("tokens/.env")
