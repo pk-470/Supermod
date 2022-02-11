@@ -83,7 +83,7 @@ class Album_Submissions(
                             + item[1][1].jump_url
                         )
                 subs_check_msg_full = "\n".join(check_list)
-                subs_check = post_split(subs_check_msg_full)
+                subs_check = post_split(subs_check_msg_full, 2000)
                 for sub_check in subs_check:
                     await ctx.send(sub_check)
             else:

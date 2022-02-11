@@ -39,12 +39,12 @@ class Submissions_status(commands.Cog):
     async def submissions_status(self):
         print(
             "Submissions status loop is working ("
-            + pendulum.now().strftime("%Y-%m-%d, %H:%M:%S")
+            + pendulum.now("EST").strftime("%Y-%m-%d, %H:%M:%S EST")
             + ")."
         )
         if (
-            pendulum.now().strftime("%A") == submissions_open_day
-            and pendulum.now().hour == submissions_open_hour
+            pendulum.now("EST").strftime("%A") == submissions_open_day
+            and pendulum.now("EST").hour == submissions_open_hour
         ):
             await self.bot.get_channel(announcements_channel).send(
                 "Hello "
@@ -55,12 +55,12 @@ class Submissions_status(commands.Cog):
             )
             print(
                 '"Submissions is open" message has been posted (date: '
-                + pendulum.now().strftime("%Y-%m-%d")
+                + pendulum.now("EST").strftime("%Y-%m-%d")
                 + ")."
             )
         if (
-            pendulum.now().strftime("%A") == submissions_close_day
-            and pendulum.now().hour == submissions_close_hour
+            pendulum.now("EST").strftime("%A") == submissions_close_day
+            and pendulum.now("EST").hour == submissions_close_hour
         ):
             await self.bot.get_channel(announcements_channel).send(
                 "Hello "
@@ -76,7 +76,7 @@ class Submissions_status(commands.Cog):
             )
             print(
                 '"Submissions is closed" message has been posted (date: '
-                + pendulum.now().strftime("%Y-%m-%d")
+                + pendulum.now("EST").strftime("%Y-%m-%d")
                 + ")."
             )
 

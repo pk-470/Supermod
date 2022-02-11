@@ -26,58 +26,66 @@ else:
     gsa = gspread.service_account_from_dict(loads(getenv("SERVICE_ACCOUNT_CRED")))
 
 
+# Setting
 qotd_wks = gsa.open_by_url(getenv("QOTD_SHEET_URL")).sheet1
 
-
-# Setting
 qotd_channel = int(getenv("QOTD_CHANNEL"))
-qotd_hour = 6
+activities_channel = int(getenv("ACTIVITIES_CHANNEL"))
+
+qotd_hour = 18
 
 
-class QOTD(commands.Cog, description="Functions to set up and retrieve QOTD."):
+class QOTD(commands.Cog, description="Retrieve a QOTD."):
     def __init__(self, bot):
         self.bot = bot
         self.qotd_loop.start()
 
     @commands.command(
-        brief="Fetch a QOTD without marking it as used.",
-        description="Fetch a QOTD without marking it as used.",
+        brief="Fetch a QOTD. Add the option `mark' to mark the question as used.",
+        description="Fetch a QOTD. Add the option `mark' to mark the question as used.",
     )
-    async def qotd(self, ctx):
+    async def qotd(self, ctx, mark=None):
         questions = qotd_wks.get_all_values()
-        await ctx.send(qotd_get(questions)[2])
+        question = qotd_get(questions)
+        await ctx.send(question[2])
+        if mark == "mark":
+            mark_as_used(question)
 
     # QOTD loop
     @tasks.loop(minutes=60)
     async def qotd_loop(self):
         print(
             "QOTD loop is working ("
-            + pendulum.now().strftime("%Y-%m-%d, %H:%M:%S")
+            + pendulum.now("EST").strftime("%Y-%m-%d, %H:%M:%S EST")
             + ")."
         )
-        if pendulum.now().hour == qotd_hour:
+        if pendulum.now("EST").hour == qotd_hour:
             questions = qotd_wks.get_all_values()
-            date_str = pendulum.now().strftime("%m/%#d/%Y")
+            date_str = pendulum.now("EST").strftime("%m/%#d/%Y")
             question = qotd_get(questions)
-            await self.bot.get_channel(qotd_channel).send(
-                "__**"
-                + question[0]
-                + " of the Day "
-                + date_str
-                + ":**__\n\n"
-                + question[2]
-            )
-            question_row = qotd_wks.find(question[2]).row
-            question_count = qotd_wks.cell(question_row, 3)
-            if question_count:
-                qotd_wks.update_cell(question_row, 4, 1)
+            if question[0].lower() == "question":
+                await self.bot.get_channel(qotd_channel).send(
+                    "__**Question of the Day " + date_str + ":**__\n\n" + question[2]
+                )
+                print(
+                    "QOTD has been posted (date: "
+                    + pendulum.now("EST").strftime("%Y-%m-%d")
+                    + ")."
+                )
             else:
-                qotd_wks.update_cell(question_row, 4, int(question_count) + 1)
-            print(
-                "QOTD has been posted (date: "
-                + pendulum.now().strftime("%Y-%m-%d")
-                + ")."
-            )
+                await self.bot.get_channel(activities_channel).send(
+                    "Activity of the Day "
+                    + date_str
+                    + "(adapt as required):\n\n"
+                    + question[2]
+                )
+                print(
+                    "Activity of the Day has been submitted for posting (date: "
+                    + pendulum.now("EST").strftime("%Y-%m-%d")
+                    + ")."
+                )
+
+            mark_as_used(question)
 
 
 def qotd_get(questions):
@@ -89,6 +97,15 @@ def qotd_get(questions):
     ]
     question = choice(questions)
     return question
+
+
+def mark_as_used(question):
+    question_row = qotd_wks.find(question[2]).row
+    question_count = qotd_wks.cell(question_row, 3)
+    if question_count:
+        qotd_wks.update_cell(question_row, 4, 1)
+    else:
+        qotd_wks.update_cell(question_row, 4, int(question_count) + 1)
 
 
 # Add cog to bot

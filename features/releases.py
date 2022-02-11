@@ -27,12 +27,12 @@ else:
 
     gsa = gspread.service_account_from_dict(loads(getenv("SERVICE_ACCOUNT_CRED")))
 
+
+# Setting
 news_sheet = gsa.open_by_url(getenv("NEWS_SHEET_URL"))
 
 
-class Newsletter(
-    commands.Cog, description="Functions to setup and create the weekly newsletter."
-):
+class Newsletter(commands.Cog, description="Functions to fetch the weekly newsletter."):
     def __init__(self, bot):
         self.bot = bot
 
@@ -44,7 +44,7 @@ class Newsletter(
     )
     async def news(self, ctx, date_str=None):
         if date_str == None:
-            date = pendulum.today()
+            date = pendulum.today("EST")
         else:
             try:
                 date = pendulum.from_format(date_str, "M/D/YYYY")
@@ -74,7 +74,7 @@ class Newsletter(
             await ctx.send("What will be this week's newsletter message?")
             return
         else:
-            date = pendulum.today()
+            date = pendulum.today("EST")
             sheet_data = news_sheet.sheet1.get_all_values()
             posts = newsletter_create(sheet_data, date, message)
             for post in posts:
@@ -161,20 +161,26 @@ def newsletter_create(sheet_data, date, message=None):
             + ">\n\nHappy Listening!"
         )
 
-    return post_split(post_full)
+    return post_split(post_full, 2000)
 
 
 # Split long posts
-def post_split(long_post):
+def post_split(long_post, length):
     posts = [long_post]
-    while len(long_post) > 2000:
+    while len(long_post) > length:
         i = 1
-        while long_post[2000 - i] != "\n":
+        while i < length and long_post[length - i] != "\n":
             i = i + 1
-        split_at = 2000 - i
+        if i < length:
+            split_at = length - i
+        else:
+            i = 1
+            while i < length and long_post[length - i] not in (".", "?", "!"):
+                i = i + 1
+            split_at = length - i + 1
         posts.remove(long_post)
-        posts.extend([long_post[:split_at], long_post[split_at:]])
-        long_post = long_post[split_at:]
+        posts.extend([long_post[:split_at], long_post[split_at + 1 :]])
+        long_post = long_post[split_at + 1 :]
 
     return posts
 

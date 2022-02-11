@@ -2,7 +2,7 @@
 
 A bot handling various tasks for the Discord server "Omnivoracious Listeners".
 
-Version 1.9:
+Version 2.0:
 
 Finished features:
 
@@ -13,6 +13,7 @@ Finished features:
 - Help message
 - Fetching album submissions
 - Approving or rejecting album submissions
+- Creators, friends and partners ads
 
 Currently working on:
 
@@ -22,9 +23,8 @@ To appear:
 
 - Checking whether the user has already submitted an album or not
 - Checking if the album is already submitted or if it has appeared in the server before
-- Creators, friends and partners ads
 - Fetching releases filtered by artist, genre etc.
 
 Other changes:
 
-- Complete reorganisation of the package structure
+- Improvement of the post_split function
