@@ -103,7 +103,7 @@ class Promotions(
                 await ctx.send("The promo was submitted.")
             else:
                 await ctx.send("The promo was not submitted.")
-        except TimeoutError:
+        except:
             await ctx.send("Something went wrong. Please try again.")
 
     @tasks.loop(minutes=60)
