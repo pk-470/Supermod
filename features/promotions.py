@@ -58,9 +58,11 @@ class Promotions(
             await ctx.send("Submitter Type (Creator / Partner):")
             response = await self.bot.wait_for("message", timeout=30.0, check=check)
             new_promo.append(response.content.capitalize())
-            await ctx.send("Embed (Yes / No):")
-            response = await self.bot.wait_for("message", timeout=30.0, check=check)
-            new_promo.append(response.content.capitalize())
+            if response.content.lower() == "creator":
+                embed = "Yes"
+            elif response.content.lower() == "partner":
+                embed = "No"
+            new_promo.append(embed)
             await ctx.send("Project Name:")
             response = await self.bot.wait_for("message", timeout=30.0, check=check)
             new_promo.append(response.content.capitalize())
@@ -130,9 +132,7 @@ class Promotions(
                                 int(remove_spaces(member_id)[3:-1])
                             )
                     except:
-                        promos_wks.delete_row(promos_wks.find(promo[6]).row)
-                        return
-
+                        continue
                     promo_msg, mode = promo_make(promo)
                     if mode == "embed":
                         await self.bot.get_channel(ads_channel).send(embed=promo_msg)
@@ -155,7 +155,7 @@ def promo_make(promo):
                 embed.add_field(name="\u200b", value=posts[i], inline=False)
         return embed, "embed"
     else:
-        return "**" + promo[2] + "**\n" + promo[6] + "\n\n" + promo[3], "no embed"
+        return "**" + promo[2] + "**\n\n" + promo[3], "no embed"
 
 
 # Add cog to bot
