@@ -1,7 +1,6 @@
 # Libraries for Discord
 from discord import Embed, Color
 from discord.ext import commands, tasks
-from grpc import channel_ready_future
 
 # Google spreadsheets
 import gspread
