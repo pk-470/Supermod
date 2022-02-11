@@ -109,7 +109,7 @@ class Promotions(
     @tasks.loop(minutes=60)
     async def ads_loop(self):
         print(
-            "Ads loop is working ("
+            "Promotions loop is working ("
             + pendulum.now("EST").strftime("%Y-%m-%d, %H:%M:%S")
             + ")."
         )
