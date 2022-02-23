@@ -115,7 +115,16 @@ class Album_Submissions(
 
                 # Reject and delete submissions
                 elif response.content.lower().startswith("reject"):
-                    sub_indices = [ind for ind in response.content if ind.isnumeric()]
+                    resp_content = response.content.split(" ")
+                    sub_indices = []
+                    for ind in resp_content:
+                        if ind[-1] == ",":
+                            ind = ind[:-1]
+                        try:
+                            int(ind)
+                            sub_indices.append(ind)
+                        except:
+                            pass
                     sub_msgs = [subs_dict[ind].message for ind in sub_indices]
                     if len(sub_indices) == 1:
                         await ctx.send(
@@ -171,17 +180,16 @@ def submission_make(msg):
     # Input a Discord message (NOT A STRING).
     # Returns a submission if things go right or
     # a sub_error if things go wrong.
-    sub_message = msg.content
-    request = "add"
-    if sub_message.lower().startswith("replace"):
-        request = "replace"
-        sub_message = sub_message[sub_message.lower().find("with") + 4 :]
-    if sub_message[0] == ":":
-        sub_message = sub_message[1:]
-
-    sub_data = sub_message.split("//")
-
     try:
+        sub_message = msg.content
+        request = "add"
+        if sub_message.lower().startswith("replace"):
+            request = "replace"
+            sub_message = sub_message[sub_message.lower().find("with") + 4 :]
+        if sub_message[0] == ":":
+            sub_message = sub_message[1:]
+
+        sub_data = sub_message.split("//")
         sub_album = submission(
             artist=sub_data[1],
             title=sub_data[0],
@@ -239,7 +247,7 @@ async def subs_check_msg(ctx, bot, masterlist):
     msgs = []
 
     # Fetch submission history and keep those with no reaction.
-    async for msg in bot.get_channel(submissions_channel).history(oldest_first=True):
+    async for msg in bot.get_channel(submissions_channel).history(limit=100):
         if not msg.reactions:
             msgs.append(msg)
 
