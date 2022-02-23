@@ -9,6 +9,7 @@ from os import getenv
 
 # Libraries for various functions
 from random import choice
+from asyncio import TimeoutError
 import pendulum
 
 # Import data according to local_mode status
@@ -30,26 +31,51 @@ else:
 qotd_wks = gsa.open_by_url(getenv("QOTD_SHEET_URL")).sheet1
 
 qotd_channel = int(getenv("QOTD_CHANNEL"))
-activities_channel = int(getenv("ACTIVITIES_CHANNEL"))
+qotd_approval_channel = int(getenv("QOTD_APPROVAL_CHANNEL"))
 
-qotd_hour = 18
+qotd_hour = 6
 
 
-class QOTD(commands.Cog, description="Retrieve a QOTD."):
+class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
     def __init__(self, bot):
         self.bot = bot
         self.qotd_loop.start()
 
     @commands.command(
-        brief="Fetch a QOTD. Add the option `mark' to mark the question as used.",
-        description="Fetch a QOTD. Add the option `mark' to mark the question as used.",
+        brief="Fetch a QOTD. React with a green checkmark to mark the question as used.",
+        description="Fetch a QOTD. React with a green checkmark to mark the question as used.",
     )
-    async def qotd(self, ctx, mark=None):
-        questions = qotd_wks.get_all_values()
-        question = qotd_get(questions)
-        await ctx.send(question[2])
-        if mark == "mark":
-            mark_as_used(question)
+    async def qotd(self, ctx):
+        await qotd_interact(self.bot, ctx, timeout=60)
+
+    @commands.command(
+        brief="Add a question/activity to the spreadsheet.",
+        description="Add a question/activity to the spreadsheet.",
+    )
+    async def qotd_add(self, ctx, qotd_type, repeatable, *, qotd):
+        try:
+            if qotd_type.lower().startswith("q"):
+                qotd_type_sh = "Question"
+            elif qotd_type.lower()[0] == "a":
+                qotd_type_sh = "Activity"
+            if repeatable.lower()[0] == "y":
+                repeatable_sh = "Y"
+                repeatable_long = "repeatable"
+            elif repeatable.lower()[0] == "n":
+                repeatable_sh = "N"
+                repeatable_long = "non-repeatable"
+            qotd_wks.append_row([qotd_type_sh, repeatable_sh, qotd])
+            await ctx.send(
+                "The "
+                + qotd_type_sh.lower()
+                + " '"
+                + qotd
+                + "' ("
+                + repeatable_long
+                + ") was added to the spreadsheet."
+            )
+        except:
+            await ctx.send("Something went wrong. Please try again.")
 
     # QOTD loop
     @tasks.loop(minutes=60)
@@ -60,43 +86,76 @@ class QOTD(commands.Cog, description="Retrieve a QOTD."):
             + ")."
         )
         if pendulum.now("EST").hour == qotd_hour:
-            questions = qotd_wks.get_all_values()
-            date_str = pendulum.now("EST").strftime("%m/%#d/%Y")
-            question = qotd_get(questions)
-            if question[0].lower() == "question":
-                await self.bot.get_channel(qotd_channel).send(
-                    "__**Question of the Day " + date_str + ":**__\n\n" + question[2]
-                )
-                print(
-                    "QOTD has been posted (date: "
-                    + pendulum.now("EST").strftime("%Y-%m-%d")
-                    + ")."
-                )
-            else:
-                await self.bot.get_channel(activities_channel).send(
-                    "Activity of the Day "
-                    + date_str
-                    + "(adapt as required):\n\n"
-                    + question[2]
-                )
-                print(
-                    "Activity of the Day has been submitted for posting (date: "
-                    + pendulum.now("EST").strftime("%Y-%m-%d")
-                    + ")."
-                )
-
-            mark_as_used(question)
+            await qotd_interact(
+                self.bot, self.bot.get_channel(qotd_approval_channel), timeout=3600
+            )
 
 
-def qotd_get(questions):
+async def qotd_interact(bot, channel, timeout):
+    question = qotd_get()
+    qotd = await channel.send(question[2])
+    await qotd.add_reaction(emoji="✅")
+    await qotd.add_reaction(emoji="❌")
+    await qotd.add_reaction(emoji="🇪")
+
+    def check(reaction, user):
+        return str(reaction.emoji) in ("✅", "❌", "🇪") and user != bot.user
+
+    try:
+        reaction, user = await bot.wait_for(
+            "reaction_add", timeout=timeout, check=check
+        )
+        if str(reaction.emoji) == "✅":
+            await qotd_post(question, bot, channel)
+        elif str(reaction.emoji) == "❌":
+            await channel.send("The QOTD was rejected.")
+        elif str(reaction.emoji) == "🇪":
+            await channel.send(
+                "Respond with an edited version of the "
+                + question[0].lower()
+                + " which I will post instead (I will mark the original "
+                + question[0].lower()
+                + " as used in the spreadsheet without changing its template)."
+                + " Respond with 'stop' if you want me to stop waiting for"
+                + " a response."
+            )
+
+            def check(response):
+                return response.author == user
+
+            response = await bot.wait_for("message", timeout=600.0, check=check)
+            if response.content.lower() == "stop":
+                return
+            await channel.send("The following will be posted as QOTD:")
+            qotd = await channel.send(response.content)
+            await qotd.add_reaction(emoji="✅")
+            await qotd.add_reaction(emoji="❌")
+
+            def check(reaction, user):
+                return str(reaction.emoji) in ("✅", "❌") and user != bot.user
+
+            reaction, user = await bot.wait_for(
+                "reaction_add", timeout=60.0, check=check
+            )
+            if str(reaction.emoji) == "✅":
+                await qotd_post(question, bot, channel, overwrite=response.content)
+            elif str(reaction.emoji) == "❌":
+                await channel.send("The QOTD was rejected.")
+
+    except TimeoutError:
+        channel.send("Time has run out.")
+
+
+def qotd_get():
+    questions = qotd_wks.get_all_values()
     questions = [
         question
         for question in questions
         if question[2]
         and (question[1] == "N" and not question[3] or question[1] == "Y")
     ]
-    question = choice(questions)
-    return question
+    question_full = choice(questions)
+    return question_full
 
 
 def mark_as_used(question):
@@ -106,6 +165,32 @@ def mark_as_used(question):
         qotd_wks.update_cell(question_row, 4, 1)
     else:
         qotd_wks.update_cell(question_row, 4, int(question_count) + 1)
+
+
+async def qotd_post(question, bot, ctx, overwrite=None):
+    date_str = pendulum.now("EST").strftime("%m/%#d/%Y")
+    if overwrite == None:
+        await bot.get_channel(qotd_channel).send(
+            "__**"
+            + question[0].capitalize()
+            + " of the Day "
+            + date_str
+            + ":**__\n\n"
+            + question[2]
+        )
+    else:
+        await bot.get_channel(qotd_channel).send(
+            "__**"
+            + question[0].capitalize()
+            + " of the Day "
+            + date_str
+            + ":**__\n\n"
+            + overwrite
+        )
+    mark_as_used(question)
+    conf_msg = "QOTD has been posted (date: " + date_str + ")."
+    await ctx.send(conf_msg)
+    print(conf_msg)
 
 
 # Add cog to bot

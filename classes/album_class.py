@@ -5,7 +5,7 @@ from data.discord_country_flags import discord_country_flags
 class album:
     def __init__(
         self,
-        artists,
+        artist,
         title,
         genres=None,
         release_date=None,
@@ -13,7 +13,7 @@ class album:
         length=None,
         FFO=None,
     ):
-        self.artists = handle_input(artists)
+        self.artist = remove_spaces(artist)
         self.title = remove_spaces(title)
         self.genres = handle_input(genres)
         self.length = handle_length(length)
@@ -28,7 +28,7 @@ class album:
                     [discord_country_flags[country] for country in self.countries]
                 )
                 + "  | "
-                + ", ".join(self.artists)
+                + self.artist
                 + " - '"
                 + self.title
                 + "' (Genre: "
@@ -40,7 +40,7 @@ class album:
                 "Something went wrong with album "
                 + self.title
                 + " by "
-                + str([self.artists])
+                + self.artist
                 + " from "
                 + str(self.countries)
                 + " (Genre: "

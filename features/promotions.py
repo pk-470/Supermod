@@ -55,31 +55,41 @@ class Promotions(
             return resp.author == ctx.author and resp.channel == ctx.channel
 
         try:
+            await ctx.send("Respond with 'stop' at any point to stop the process.")
             await ctx.send("Submitter Type (Creator / Partner):")
             response = await self.bot.wait_for("message", timeout=30.0, check=check)
-            new_promo.append(response.content.capitalize())
-            if response.content.lower() == "creator":
+            if response.content.lower() == "stop":
+                return
+            elif response.content.lower() == "creator":
                 embed = "Yes"
             elif response.content.lower() == "partner":
                 embed = "No"
-            new_promo.append(embed)
+            new_promo.extend([response.content.capitalize(), embed])
             await ctx.send("Project Name:")
             response = await self.bot.wait_for("message", timeout=30.0, check=check)
+            if response.content.lower() == "stop":
+                return
             new_promo.append(response.content.capitalize())
             await ctx.send("Message (no mentions on top):")
             response = await self.bot.wait_for("message", timeout=90.0, check=check)
+            if response.content.lower() == "stop":
+                return
             new_promo.append(response.content)
             await ctx.send(
                 "Date/Time (e.g. 11/4:00). Dates/Times which are already taken: "
                 + ", ".join(dates)
             )
             response = await self.bot.wait_for("message", timeout=90.0, check=check)
+            if response.content.lower() == "stop":
+                return
             new_date = response.content.split("/")
             new_promo.extend(new_date)
             await ctx.send(
                 "Member ID(s) (in the format 'number_1 number_2' etc. without any commas or <@!, >):"
             )
             response = await self.bot.wait_for("message", timeout=90.0, check=check)
+            if response.content.lower() == "stop":
+                return
             new_promo.append(
                 " ".join(["<@!" + id + ">" for id in response.content.split(" ") if id])
             )

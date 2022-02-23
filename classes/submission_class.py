@@ -8,18 +8,19 @@ import urllib.parse as url
 class submission(album):
     def __init__(
         self,
-        artists,
+        artist,
         title,
         genres,
         release_date,
         submitter_name,
         submitter_id,
         masterlist,
-        request,
+        message,
+        request=None,
     ):
         album.__init__(
             self,
-            artists,
+            artist,
             title,
             genres,
             release_date,
@@ -45,16 +46,17 @@ class submission(album):
                 self.masterlist = "wrong/missing"
         except:
             self.masterlist = "wrong/missing"
+        self.message = message
         self.request = request
         self.link = "https://www.google.com/search?q=" + url.quote_plus(
-            " ".join(self.artists) + " " + self.title
+            self.artist + " " + self.title
         )
 
     def masterlist_format_no_mention(self):
         return (
             self.title
             + " by "
-            + ", ".join(self.artists)
+            + self.artist
             + " ("
             + self.release_date
             + ") ("
@@ -76,7 +78,7 @@ class submission(album):
             + "** ("
             + str(self.submitter_id)
             + "), request: **"
-            + self.request
+            + str(self.request)
             + "** in **"
             + self.masterlist.upper()
             + "**, link: "
@@ -85,10 +87,11 @@ class submission(album):
 
     def swap(self, attribute_1, attrubute_2):
         if {attribute_1, attrubute_2} == {"artist", "title"}:
-            temp = self.artists
-            self.artists = self.title
-            self.title = temp
+            self.title, self.artist = self.artist, self.title
         elif {attribute_1, attrubute_2} == {"year", "genre"}:
-            temp = self.release_date
-            self.release_date = self.genres
-            self.genres = temp
+            self.genres, self.release_date = self.release_date, self.genres
+
+
+class sub_error:
+    def __init__(self, message):
+        self.message = message

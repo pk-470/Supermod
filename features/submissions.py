@@ -1,10 +1,13 @@
 # Library for Discord
 from discord.ext import commands
 
-# Import submission class
-from classes.submission_class import submission
+# Google spreadsheets
+import gspread
 
-# Import post_split
+# Import submission class
+from classes.submission_class import submission, sub_error
+
+# Import msg_split
 from features.releases import post_split
 
 # Library to load tokens
@@ -21,8 +24,17 @@ if local_mode == "ON":
 
     load_dotenv("tokens/.env")
 
+    gsa = gspread.service_account("tokens/service_account.json")
+else:
+    from json import loads
+
+    gsa = gspread.service_account_from_dict(loads(getenv("SERVICE_ACCOUNT_CRED")))
+
 
 # Setting
+albums_wks = gsa.open_by_url(getenv("ALBUMS_SHEET_URL")).sheet1
+weeks_wks = gsa.open_by_url(getenv("ALBUMS_SHEET_URL")).get_worksheet(1)
+
 submissions_channel = int(getenv("SUBMISSIONS_CHANNEL"))
 voted_channel = int(getenv("VOTED_CHANNEL"))
 new_channel = int(getenv("NEW_CHANNEL"))
@@ -58,56 +70,16 @@ class Album_Submissions(
             "theme",
             "error",
         ):
-            msgs = []
-            # Fetch submission history and keep those with no reaction.
-            async for msg in self.bot.get_channel(submissions_channel).history(
-                oldest_first=True
-            ):
-                if not msg.reactions:
-                    msgs.append(msg)
-            # Check if there are new submissions, and if so create the mod approval message.
-            subs_dict = masterlist_dict(msgs, masterlist)
-            if subs_dict:
-                check_list = []
-                for item in list(subs_dict.items()):
-                    if item[1][0] != None:
-                        check_list.append(
-                            "**" + item[0] + ".** " + item[1][0].sub_check_msg_full()
-                        )
-                    else:
-                        check_list.append(
-                            "**"
-                            + item[0]
-                            + ".** "
-                            + "Something went wrong with submission "
-                            + item[1][1].jump_url
-                        )
-                subs_check_msg_full = "\n".join(check_list)
-                subs_check = post_split(subs_check_msg_full, 2000)
-                for sub_check in subs_check:
-                    await ctx.send(sub_check)
-            else:
-                if masterlist == None:
-                    await ctx.send("There are no new submissions.")
-                elif masterlist == "error":
-                    await ctx.send("There are no new submissions with errors.")
-                else:
-                    await ctx.send(
-                        "There are no new submissions for the "
-                        + masterlist.upper()
-                        + " masterlist."
-                    )
+            subs_dict = await subs_check_msg(ctx, self.bot, masterlist)
 
-                return
-
-            # Submission checking options.
+            # Submission checking options
 
             def check(resp):
                 return resp.author == ctx.author
 
             try:
                 response = await self.bot.wait_for(
-                    "message", timeout=600.0, check=check
+                    "message", timeout=1200.0, check=check
                 )
 
                 # Approve submissions
@@ -117,24 +89,24 @@ class Album_Submissions(
                             "I can't add submissions with errors to the masterlist."
                         )
                     elif masterlist == None:
-                        for item in list(subs_dict.items()):
-                            if item[1][0] != None:
+                        for _, sub in list(subs_dict.items()):
+                            if type(sub).__name__ != "sub_error":
                                 await self.bot.get_channel(
-                                    channels_dict[item[1][0].masterlist]
-                                ).send(item[1][0].masterlist_format())
-                                await item[1][1].add_reaction("🆗")
+                                    channels_dict[sub.masterlist]
+                                ).send(sub.masterlist_format())
+                                await sub.message.add_reaction("🆗")
                         await ctx.send(
                             "All new submissions without errors were added to the masterlists."
                         )
                     else:
-                        for item in list(subs_dict.items()):
+                        for _, sub in list(subs_dict.items()):
                             if (
-                                item[1][0] != None
-                                and item[1][0].masterlist == masterlist
+                                type(sub).__name__ != "sub_error"
+                                and sub.masterlist == masterlist
                             ):
                                 await self.bot.get_channel(
-                                    channels_dict[item[1][0].masterlist]
-                                ).send(item[1][0].masterlist_format())
+                                    channels_dict[sub.masterlist]
+                                ).send(sub.masterlist_format())
                         await ctx.send(
                             "All new submissions without errors were added to the "
                             + masterlist.upper()
@@ -143,18 +115,18 @@ class Album_Submissions(
 
                 # Reject and delete submissions
                 elif response.content.lower().startswith("reject"):
-                    sub_nos = [no for no in response.content if no.isnumeric()]
-                    sub_msgs = [subs_dict[no][1] for no in sub_nos]
-                    if len(sub_nos) == 1:
+                    sub_indices = [ind for ind in response.content if ind.isnumeric()]
+                    sub_msgs = [subs_dict[ind].message for ind in sub_indices]
+                    if len(sub_indices) == 1:
                         await ctx.send(
                             "Are you sure you want to reject album "
-                            + sub_nos[0]
+                            + sub_indices[0]
                             + " (y/n)?"
                         )
-                    elif len(sub_nos) > 1:
+                    elif len(sub_indices) > 1:
                         await ctx.send(
                             "Are you sure you want to reject albums "
-                            + ", ".join(sub_nos)
+                            + ", ".join(sub_indices)
                             + " (y/n)?"
                         )
 
@@ -168,18 +140,22 @@ class Album_Submissions(
                     if confirm.content.lower().startswith("y"):
                         for msg in sub_msgs:
                             await msg.delete()
-                        if len(sub_nos) == 1:
-                            await ctx.send("Album " + sub_nos[0] + " was rejected.")
-                        elif len(sub_nos) > 1:
+                        if len(sub_indices) == 1:
+                            await ctx.send("Album " + sub_indices[0] + " was rejected.")
+                        elif len(sub_indices) > 1:
                             await ctx.send(
-                                "Albums " + ", ".join(sub_nos) + " were rejected."
+                                "Albums " + ", ".join(sub_indices) + " were rejected."
                             )
                     else:
-                        if len(sub_nos) == 1:
-                            await ctx.send("Album " + sub_nos[0] + " was not rejected.")
-                        elif len(sub_nos) > 1:
+                        if len(sub_indices) == 1:
                             await ctx.send(
-                                "Albums " + ", ".join(sub_nos) + " were not rejected."
+                                "Album " + sub_indices[0] + " was not rejected."
+                            )
+                        elif len(sub_indices) > 1:
+                            await ctx.send(
+                                "Albums "
+                                + ", ".join(sub_indices)
+                                + " were not rejected."
                             )
             except asyncio.TimeoutError:
                 await ctx.send("Time has run out.")
@@ -192,8 +168,9 @@ class Album_Submissions(
 
 
 def submission_make(msg):
-    # Input a Discord message (NOT a string).
-    # Returns a submission or None if things go wrong.
+    # Input a Discord message (NOT A STRING).
+    # Returns a submission if things go right or
+    # a sub_error if things go wrong.
     sub_message = msg.content
     request = "add"
     if sub_message.lower().startswith("replace"):
@@ -206,40 +183,130 @@ def submission_make(msg):
 
     try:
         sub_album = submission(
-            artists=sub_data[1],
+            artist=sub_data[1],
             title=sub_data[0],
             genres=sub_data[3],
             release_date=sub_data[2],
-            submitter_name=msg.author.name,
+            submitter_name=msg.author.display_name,
             submitter_id=msg.author.id,
             masterlist=sub_data[4],
+            message=msg,
             request=request,
         )
     except:
-        return None
+        sub_album = sub_error(message=msg)
 
     return sub_album
 
 
 def masterlist_dict(msgs, masterlist=None):
-    # Input a list of Discord messages (NOT strings).
-    # Returns a dictionary in the form {str(int), [submission, sub msg]}
+    # Input a list of Discord messages (NOT STRINGS).
+    # Returns a dictionary in the form {str(int): submission}
     # consisting of all submissions for the chosen masterlist.
     subs_dict = {}
     entry = 1
     for msg in msgs:
         sub_album = submission_make(msg)
         if masterlist == None:
-            subs_dict[str(entry)] = (sub_album, msg)
+            subs_dict[str(entry)] = sub_album
             entry = entry + 1
-        elif masterlist == "error" and sub_album == None:
-            subs_dict[str(entry)] = (None, msg)
+        elif masterlist == "error" and type(sub_album).__name__ == "sub_error":
+            subs_dict[str(entry)] = sub_album
             entry = entry + 1
-        elif sub_album != None and sub_album.masterlist == masterlist:
-            subs_dict[str(entry)] = (sub_album, msg)
+        elif (
+            type(sub_album).__name__ != "sub_error"
+            and sub_album.masterlist == masterlist
+        ):
+            subs_dict[str(entry)] = sub_album
             entry = entry + 1
 
     return subs_dict
+
+
+def discussed_check(sub_album, discussed_albums):
+    # Check if a submission has been reviewed before in the server.
+    try:
+        row = discussed_albums.index((sub_album.title, sub_album.artist))
+        return True, albums_wks.acell("C" + str(row + 2)).value
+    except:
+        return False, 0
+
+
+async def subs_check_msg(ctx, bot, masterlist):
+    # Check if there are new submissions, and if so create the mod approval message.
+    # Return also the submissions dictionary.
+
+    msgs = []
+
+    # Fetch submission history and keep those with no reaction.
+    async for msg in bot.get_channel(submissions_channel).history(oldest_first=True):
+        if not msg.reactions:
+            msgs.append(msg)
+
+    # Create the appropriate submissions dictionary.
+    subs_dict = masterlist_dict(msgs, masterlist)
+
+    # Various checks.
+    discussed_artists = albums_wks.col_values(2)[1:]
+    discussed_albums = list(zip(albums_wks.col_values(1)[1:], discussed_artists))
+    if subs_dict:
+        check_list = []
+        for ind, sub in list(subs_dict.items()):
+            # Check for errors.
+            if type(sub).__name__ == "sub_error":
+                check_list.append(
+                    "**"
+                    + ind
+                    + ".** "
+                    + "Something went wrong with submission <"
+                    + sub.message.jump_url
+                    + ">."
+                )
+            else:
+                # Check whether the album has been discussed before.
+                check, week = discussed_check(sub, discussed_albums)
+                if check:
+                    check_list.append(
+                        "**"
+                        + ind
+                        + ".** "
+                        + sub.title
+                        + " by "
+                        + sub.artist
+                        + " seems to have been discussed already on week "
+                        + week
+                        + " (submitted by "
+                        + sub.submitter_name
+                        + " ("
+                        + str(sub.submitter_id)
+                        + "), link to submission: <"
+                        + sub.message.jump_url
+                        + ">)."
+                    )
+                else:
+                    check_list.append("**" + ind + ".** " + sub.sub_check_msg_full())
+
+        # Create post.
+        subs_check_msg_full = "\n".join(check_list)
+        subs_check = post_split(subs_check_msg_full, 2000)
+        for sub_check in subs_check:
+            await ctx.send(sub_check)
+
+        return subs_dict
+
+    else:
+        if masterlist == None:
+            await ctx.send("There are no new submissions.")
+        elif masterlist == "error":
+            await ctx.send("There are no new submissions with errors.")
+        else:
+            await ctx.send(
+                "There are no new submissions for the "
+                + masterlist.upper()
+                + " masterlist."
+            )
+
+        return []
 
 
 # Add cog to bot

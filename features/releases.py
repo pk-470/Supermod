@@ -89,7 +89,7 @@ def news_get(sheet_data, week):
     ]
     albums = [
         album(
-            artists=release[0],
+            artist=release[0],
             title=release[1],
             genres=release[4],
             release_date=release[2],
