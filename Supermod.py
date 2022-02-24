@@ -10,8 +10,10 @@ import pendulum
 # Connect to Discord and define prefix
 bot = commands.Bot(command_prefix=",", case_insensitive=True)
 
+# --------------------------------------------------MODE-SWITCH--------------------------------------------------
 # Choose the mode (ON to run the bot locally, OFF to upload and run on Heroku)
 local_mode = "OFF"
+# --------------------------------------------------MODE-SWITCH--------------------------------------------------
 
 with open("mode_switch.txt", "w") as switch:
     switch.write(local_mode)

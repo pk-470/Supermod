@@ -43,7 +43,9 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
 
     @commands.command(
         brief="Fetch a QOTD. React with a green checkmark to mark the question as used.",
-        description="Fetch a QOTD. React with a green checkmark to mark the question as used.",
+        description="Fetch a QOTD. React with a green checkmark to post the question and"
+        + " mark it as used, with a red X to reject the question, and with E to post an"
+        + " edited version of the question and mark the original as used.",
     )
     async def qotd(self, ctx):
         await qotd_interact(self.bot, ctx, timeout=60)
