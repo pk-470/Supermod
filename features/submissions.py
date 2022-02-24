@@ -59,7 +59,15 @@ class Album_Submissions(
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command()
+    @commands.command(
+        brief="Fetch and approve or reject submissions for the masterlists.",
+        description="Optional argument: masterlist name (i.e. one of 'voted', 'new', 'modern',"
+        + " 'classic', 'theme') to only fetch submissions for that masterlist, or 'error' to fetch"
+        + " messages in #submissions which cannot be correctly interpreted as a submission by the bot."
+        + " Once the submissions have been fetched, you have 20 minutes to respond with 'ok' in order"
+        + " to approve all submissions, 'reject' followed by the numbers of the submissions you want to"
+        + " reject, or 'stop' to stop the process.",
+    )
     async def subs(self, ctx, masterlist=None):
         # Check if an appropriate masterlist is chosen, otherwise prompt for one.
         if masterlist == None or masterlist.lower() in (
@@ -71,6 +79,11 @@ class Album_Submissions(
             "error",
         ):
             subs_dict = await subs_check_msg(ctx, self.bot, masterlist)
+            ctx.send(
+                "You have 20 minutes to respond with 'ok' in order to approve all"
+                + " submissions, 'reject' followed by the numbers of the submissions"
+                + " you want to reject, or 'stop' to stop the process."
+            )
 
             # Submission checking options
 
@@ -81,6 +94,10 @@ class Album_Submissions(
                 response = await self.bot.wait_for(
                     "message", timeout=1200.0, check=check
                 )
+
+                if response.content.lower().startswith("stop"):
+                    ctx.send("The approval process has been stopped.")
+                    return
 
                 # Approve submissions
                 if response.content.lower().startswith("ok"):

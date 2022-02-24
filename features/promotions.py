@@ -46,7 +46,10 @@ class Promotions(
         self.bot = bot
         self.ads_loop.start()
 
-    @commands.command()
+    @commands.command(
+        brief="Add a creator / partner for promotion.",
+        description="Follow the bot's instructions to add a creator / partner for promotion.",
+    )
     async def add_promo(self, ctx):
         dates = [promo[4] + "/" + promo[5] for promo in promos_wks.get_all_values()[1:]]
         new_promo = []
@@ -59,6 +62,7 @@ class Promotions(
             await ctx.send("Submitter Type (Creator / Partner):")
             response = await self.bot.wait_for("message", timeout=30.0, check=check)
             if response.content.lower() == "stop":
+                ctx.send("The process has stopped.")
                 return
             elif response.content.lower() == "creator":
                 embed = "Yes"
