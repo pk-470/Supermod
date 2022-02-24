@@ -5,7 +5,7 @@ from discord.ext import commands
 import gspread
 
 # Import submission class
-from classes.submission_class import submission, sub_error
+from classes.submission_class import Submission, Sub_error
 
 # Import msg_split
 from features.releases import post_split
@@ -107,7 +107,7 @@ class Album_Submissions(
                         )
                     elif masterlist == None:
                         for _, sub in list(subs_dict.items()):
-                            if type(sub).__name__ != "sub_error":
+                            if type(sub).__name__ != "Sub_error":
                                 await self.bot.get_channel(
                                     channels_dict[sub.masterlist]
                                 ).send(sub.masterlist_format())
@@ -118,7 +118,7 @@ class Album_Submissions(
                     else:
                         for _, sub in list(subs_dict.items()):
                             if (
-                                type(sub).__name__ != "sub_error"
+                                type(sub).__name__ != "Sub_error"
                                 and sub.masterlist == masterlist
                             ):
                                 await self.bot.get_channel(
@@ -195,8 +195,8 @@ class Album_Submissions(
 
 def submission_make(msg):
     # Input a Discord message (NOT A STRING).
-    # Returns a submission if things go right or
-    # a sub_error if things go wrong.
+    # Returns a Submission class if things go right or
+    # a Sub_error class if things go wrong.
     try:
         sub_message = msg.content
         request = "add"
@@ -207,7 +207,7 @@ def submission_make(msg):
             sub_message = sub_message[1:]
 
         sub_data = sub_message.split("//")
-        sub_album = submission(
+        sub_album = Submission(
             artist=sub_data[1],
             title=sub_data[0],
             genres=sub_data[3],
@@ -219,7 +219,7 @@ def submission_make(msg):
             request=request,
         )
     except:
-        sub_album = sub_error(message=msg)
+        sub_album = Sub_error(message=msg)
 
     return sub_album
 
@@ -235,11 +235,11 @@ def masterlist_dict(msgs, masterlist=None):
         if masterlist == None:
             subs_dict[str(entry)] = sub_album
             entry = entry + 1
-        elif masterlist == "error" and type(sub_album).__name__ == "sub_error":
+        elif masterlist == "error" and type(sub_album).__name__ == "Sub_error":
             subs_dict[str(entry)] = sub_album
             entry = entry + 1
         elif (
-            type(sub_album).__name__ != "sub_error"
+            type(sub_album).__name__ != "Sub_error"
             and sub_album.masterlist == masterlist
         ):
             subs_dict[str(entry)] = sub_album
@@ -278,7 +278,7 @@ async def subs_check_msg(ctx, bot, masterlist):
         check_list = []
         for ind, sub in list(subs_dict.items()):
             # Check for errors.
-            if type(sub).__name__ == "sub_error":
+            if type(sub).__name__ == "Sub_error":
                 check_list.append(
                     "**"
                     + ind

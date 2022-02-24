@@ -2,7 +2,7 @@
 from data.discord_country_flags import discord_country_flags
 
 
-class album:
+class Album:
     def __init__(
         self,
         artist,
@@ -11,7 +11,7 @@ class album:
         release_date=None,
         countries=None,
         length=None,
-        FFO=None,
+        ffo=None,
     ):
         self.artist = remove_spaces(artist)
         self.title = remove_spaces(title)
@@ -19,7 +19,7 @@ class album:
         self.length = handle_length(length)
         self.release_date = remove_spaces(release_date)
         self.countries = handle_input(countries)
-        self.FFO = handle_input(FFO)
+        self.ffo = handle_input(ffo)
 
     def news_format(self):
         try:

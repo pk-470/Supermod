@@ -2,7 +2,7 @@
 from discord.ext import commands
 
 # Album class
-from classes.album_class import album
+from classes.album_class import Album
 
 # Library for date manipulation
 import pendulum
@@ -88,7 +88,7 @@ def news_get(sheet_data, week):
         if release[0] and release[0] != "..." and week_check(release[2], week)
     ]
     albums = [
-        album(
+        Album(
             artist=release[0],
             title=release[1],
             genres=release[4],

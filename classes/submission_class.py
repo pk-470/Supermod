@@ -1,11 +1,11 @@
 # Parent album class
-from classes.album_class import album, remove_spaces
+from classes.album_class import Album, remove_spaces
 
 # Library to create urls
 import urllib.parse as url
 
 
-class submission(album):
+class Submission(Album):
     def __init__(
         self,
         artist,
@@ -18,7 +18,7 @@ class submission(album):
         message,
         request=None,
     ):
-        album.__init__(
+        Album.__init__(
             self,
             artist,
             title,
@@ -26,7 +26,7 @@ class submission(album):
             release_date,
             countries=None,
             length=None,
-            FFO=None,
+            ffo=None,
         )
         self.submitter_name = submitter_name
         self.submitter_id = submitter_id
@@ -85,13 +85,7 @@ class submission(album):
             + self.link
         )
 
-    def swap(self, attribute_1, attrubute_2):
-        if {attribute_1, attrubute_2} == {"artist", "title"}:
-            self.title, self.artist = self.artist, self.title
-        elif {attribute_1, attrubute_2} == {"year", "genre"}:
-            self.genres, self.release_date = self.release_date, self.genres
 
-
-class sub_error:
+class Sub_error:
     def __init__(self, message):
         self.message = message
