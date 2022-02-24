@@ -7,7 +7,7 @@ import gspread
 # Import submission class
 from classes.submission_class import Submission, Sub_error
 
-# Import msg_split
+# Import post_split
 from features.releases import post_split
 
 # Library to load tokens
