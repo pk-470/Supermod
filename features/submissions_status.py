@@ -25,7 +25,7 @@ listeners_role_mention = "<@&" + str(getenv("LISTENERS_ROLE")) + ">"
 
 submissions_open_day = "Saturday"
 submissions_open_hour = 20
-submissions_close_day = "Thursday"
+submissions_close_day = "Wednesday"
 submissions_close_hour = 20
 
 
