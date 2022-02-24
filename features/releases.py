@@ -95,7 +95,7 @@ def news_get(sheet_data, week):
             release_date=release[2],
             countries=release[6],
             length=release[3],
-            FFO=release[7],
+            ffo=release[7],
         )
         for release in releases
     ]
