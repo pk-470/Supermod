@@ -23,10 +23,10 @@ voted_channel = int(getenv("VOTED_CHANNEL"))
 
 listeners_role_mention = "<@&" + str(getenv("LISTENERS_ROLE")) + ">"
 
-submissions_open_day = "Monday"
-submissions_open_hour = 6
-submissions_close_day = "Monday"
-submissions_close_hour = 6
+submissions_open_day = "Saturday"
+submissions_open_hour = 18
+submissions_close_day = "Thursday"
+submissions_close_hour = 18
 
 
 class Submissions_status(commands.Cog):
