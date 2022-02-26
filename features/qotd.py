@@ -66,7 +66,7 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
             if qotd_type.lower() == "stop":
                 ctx.send("The process has stopped.")
                 return
-            elif qotd_type.lower().startswith("q"):
+            elif qotd_type.lower()[0] == "q":
                 qotd_type_sh = "Question"
             elif qotd_type.lower()[0] == "a":
                 qotd_type_sh = "Activity"
