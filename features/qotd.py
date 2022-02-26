@@ -64,7 +64,7 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
             await ctx.send("QOTD type (Question / Activity):")
             response = await self.bot.wait_for("message", timeout=30.0, check=check)
             if response.content.lower() == "stop":
-                ctx.send("The process has stopped.")
+                await ctx.send("The QOTD submission process has stopped.")
                 return
             elif response.content.lower()[0] == "q":
                 qotd_type = "Question"
@@ -73,7 +73,7 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
             await ctx.send("Repeatable (Yes / No):")
             response = await self.bot.wait_for("message", timeout=30.0, check=check)
             if response.content.lower() == "stop":
-                ctx.send("The process has stopped.")
+                await ctx.send("The QOTD submission process has stopped.")
                 return
             elif response.content.lower()[0] == "y":
                 repeatable = "Y"
@@ -82,9 +82,9 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
                 repeatable = "N"
                 repeatable_long = "non-repeatable"
             await ctx.send("QOTD content:")
-            response = await self.bot.wait_for("message", timeout=30.0, check=check)
+            response = await self.bot.wait_for("message", timeout=60.0, check=check)
             if response.content.lower() == "stop":
-                ctx.send("The process has stopped.")
+                await ctx.send("The QOTD submission process has stopped.")
                 return
             else:
                 qotd = response.content

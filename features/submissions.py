@@ -96,7 +96,7 @@ class Album_Submissions(
                 )
 
                 if response.content.lower().startswith("stop"):
-                    ctx.send("The approval process has been stopped.")
+                    await ctx.send("The approval process has been stopped.")
                     return
 
                 # Approve submissions
