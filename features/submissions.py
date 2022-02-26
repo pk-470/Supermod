@@ -100,7 +100,7 @@ class Album_Submissions(
                     return
 
                 # Approve submissions
-                if response.content.lower().startswith("ok"):
+                elif response.content.lower().startswith("ok"):
                     if masterlist == "error":
                         await ctx.send(
                             "I can't add submissions with errors to the masterlist."

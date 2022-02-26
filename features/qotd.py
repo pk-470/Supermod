@@ -42,7 +42,7 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
         self.qotd_loop.start()
 
     @commands.command(
-        brief="Fetch a QOTD. React with a green checkmark to mark the question as used.",
+        brief="Fetch a QOTD.",
         description="Fetch a QOTD. React with a green checkmark to post the question and"
         + " mark it as used, with a red X to reject the question, and with E to post an"
         + " edited version of the question and mark the original as used.",
@@ -51,21 +51,41 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
         await qotd_interact(self.bot, ctx, timeout=60)
 
     @commands.command(
-        brief="Add a question/activity to the spreadsheet.",
-        description="Add a question/activity to the spreadsheet.",
+        brief="Add a question / activity to the spreadsheet.",
+        description="Follow the bot's instructions to add a question"
+        + " / activity to the spreadsheet.",
     )
-    async def qotd_add(self, ctx, qotd_type, repeatable, *, qotd):
+    async def qotd_add(self, ctx):
+        def check(resp):
+            return resp.author == ctx.author and resp.channel == ctx.channel
+
         try:
-            if qotd_type.lower().startswith("q"):
+            await ctx.send("Respond with 'stop' at any point to stop the process.")
+            await ctx.send("QOTD type (Question / Activity):")
+            qotd_type = await self.bot.wait_for("message", timeout=30.0, check=check)
+            if qotd_type.lower() == "stop":
+                ctx.send("The process has stopped.")
+                return
+            elif qotd_type.lower().startswith("q"):
                 qotd_type_sh = "Question"
             elif qotd_type.lower()[0] == "a":
                 qotd_type_sh = "Activity"
-            if repeatable.lower()[0] == "y":
+            await ctx.send("Repeatable (Yes / No):")
+            repeatable = await self.bot.wait_for("message", timeout=30.0, check=check)
+            if repeatable.lower() == "stop":
+                ctx.send("The process has stopped.")
+                return
+            elif repeatable.lower()[0] == "y":
                 repeatable_sh = "Y"
                 repeatable_long = "repeatable"
             elif repeatable.lower()[0] == "n":
                 repeatable_sh = "N"
                 repeatable_long = "non-repeatable"
+            await ctx.send("QOTD content:")
+            qotd = await self.bot.wait_for("message", timeout=30.0, check=check)
+            if qotd.lower() == "stop":
+                ctx.send("The process has stopped.")
+                return
             qotd_wks.append_row([qotd_type_sh, repeatable_sh, qotd])
             await ctx.send(
                 "The "

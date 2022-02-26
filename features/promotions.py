@@ -72,11 +72,13 @@ class Promotions(
             await ctx.send("Project Name:")
             response = await self.bot.wait_for("message", timeout=30.0, check=check)
             if response.content.lower() == "stop":
+                ctx.send("The process has stopped.")
                 return
             new_promo.append(response.content.capitalize())
             await ctx.send("Message (no mentions on top):")
             response = await self.bot.wait_for("message", timeout=90.0, check=check)
             if response.content.lower() == "stop":
+                ctx.send("The process has stopped.")
                 return
             new_promo.append(response.content)
             await ctx.send(
@@ -85,6 +87,7 @@ class Promotions(
             )
             response = await self.bot.wait_for("message", timeout=90.0, check=check)
             if response.content.lower() == "stop":
+                ctx.send("The process has stopped.")
                 return
             new_date = response.content.split("/")
             new_promo.extend(new_date)
@@ -93,6 +96,7 @@ class Promotions(
             )
             response = await self.bot.wait_for("message", timeout=90.0, check=check)
             if response.content.lower() == "stop":
+                ctx.send("The process has stopped.")
                 return
             new_promo.append(
                 " ".join(["<@!" + id + ">" for id in response.content.split(" ") if id])
