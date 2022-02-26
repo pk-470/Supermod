@@ -70,6 +70,13 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
                 qotd_type = "Question"
             elif response.content.lower()[0] == "a":
                 qotd_type = "Activity"
+            else:
+                ctx.send(
+                    "I don't know what you mean by '"
+                    + response.content
+                    + "'. Please start the QOTD submission process again."
+                )
+                return
             await ctx.send("Repeatable (Yes / No):")
             response = await self.bot.wait_for("message", timeout=30.0, check=check)
             if response.content.lower() == "stop":
@@ -81,6 +88,13 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
             elif response.content.lower()[0] == "n":
                 repeatable = "N"
                 repeatable_long = "non-repeatable"
+            else:
+                ctx.send(
+                    "I don't know what you mean by '"
+                    + response.content
+                    + "'. Please start the QOTD submission process again."
+                )
+                return
             await ctx.send("QOTD content:")
             response = await self.bot.wait_for("message", timeout=180.0, check=check)
             if response.content.lower() == "stop":
@@ -103,6 +117,13 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
                 await ctx.send("The QOTD was added to the spreadsheet.")
             elif response.content.lower()[0] == "n":
                 await ctx.send("The QOTD was not added to the spreadsheet.")
+            else:
+                ctx.send(
+                    "I don't know what you mean by '"
+                    + response.content
+                    + "'. Please start the QOTD submission process again."
+                )
+                return
 
         except asyncio.TimeoutError:
             await ctx.send("Time has run out.")

@@ -96,7 +96,7 @@ class Album_Submissions(
                 )
 
                 if response.content.lower().startswith("stop"):
-                    await ctx.send("The approval process has been stopped.")
+                    await ctx.send("The submissions approval process has stopped.")
                     return
 
                 # Approve submissions
@@ -183,6 +183,13 @@ class Album_Submissions(
                                 + ", ".join(sub_indices)
                                 + " were not rejected."
                             )
+                else:
+                    ctx.send(
+                        "I don't know what you mean by '"
+                        + response.content
+                        + "'. Please start the submissions approval process again."
+                    )
+                return
 
             except asyncio.TimeoutError:
                 await ctx.send("Time has run out.")

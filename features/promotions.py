@@ -65,10 +65,17 @@ class Promotions(
             if response.content.lower() == "stop":
                 await ctx.send("The promo submission process has stopped.")
                 return
-            elif response.content.lower() == "creator":
+            elif response.content.lower()[0] == "c":
                 embed = "Yes"
-            elif response.content.lower() == "partner":
+            elif response.content.lower()[0] == "p":
                 embed = "No"
+            else:
+                ctx.send(
+                    "I don't know what you mean by '"
+                    + response.content
+                    + "'. Please start the promo submission process again."
+                )
+                return
             new_promo.extend([response.content.capitalize(), embed])
             await ctx.send("Project Name:")
             response = await self.bot.wait_for("message", timeout=30.0, check=check)
@@ -122,8 +129,15 @@ class Promotions(
             if confirm.content.lower().startswith("y"):
                 promos_wks.append_row(new_promo)
                 await ctx.send("The promo was submitted.")
-            else:
+            elif confirm.content.lower().startswith("n"):
                 await ctx.send("The promo was not submitted.")
+            else:
+                ctx.send(
+                    "I don't know what you mean by '"
+                    + response.content
+                    + "'. Please start the promo submission process again."
+                )
+                return
 
         except asyncio.TimeoutError:
             await ctx.send("Time has run out.")
