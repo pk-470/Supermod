@@ -79,7 +79,10 @@ class Album_Submissions(
             "error",
         ):
             subs_dict = await subs_check_msg(ctx, self.bot, masterlist)
-            ctx.send(
+            if not subs_dict:
+                return
+
+            await ctx.send(
                 "You have 20 minutes to respond with 'ok' in order to approve all"
                 + " submissions, 'reject' followed by the numbers of the submissions"
                 + " you want to reject, or 'stop' to stop the process."
