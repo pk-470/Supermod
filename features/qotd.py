@@ -9,7 +9,7 @@ from os import getenv
 
 # Libraries for various functions
 from random import choice
-from asyncio import TimeoutError
+import asyncio
 import pendulum
 
 # Import data according to local_mode status
@@ -82,7 +82,7 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
                 repeatable = "N"
                 repeatable_long = "non-repeatable"
             await ctx.send("QOTD content:")
-            response = await self.bot.wait_for("message", timeout=60.0, check=check)
+            response = await self.bot.wait_for("message", timeout=120.0, check=check)
             if response.content.lower() == "stop":
                 await ctx.send("The QOTD submission process has stopped.")
                 return
@@ -98,6 +98,9 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
                 + repeatable_long
                 + ") was added to the spreadsheet."
             )
+
+        except asyncio.TimeoutError:
+            await ctx.send("Time has run out.")
         except:
             await ctx.send("Something went wrong. Please try again.")
 

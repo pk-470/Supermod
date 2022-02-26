@@ -15,6 +15,7 @@ from classes.album_class import remove_spaces
 from features.releases import ordinal, post_split
 
 # Libraries for various functions
+import asyncio
 import pendulum
 
 # Import data according to local_mode status
@@ -123,6 +124,9 @@ class Promotions(
                 await ctx.send("The promo was submitted.")
             else:
                 await ctx.send("The promo was not submitted.")
+
+        except asyncio.TimeoutError:
+            await ctx.send("Time has run out.")
         except:
             await ctx.send("Something went wrong. Please try again.")
 

@@ -183,8 +183,12 @@ class Album_Submissions(
                                 + ", ".join(sub_indices)
                                 + " were not rejected."
                             )
+
             except asyncio.TimeoutError:
                 await ctx.send("Time has run out.")
+            except:
+                await ctx.send("Something went wrong. Please try again.")
+
         else:
             await ctx.send(
                 "Please provide a valid masterlist, or 'error' if you want to fetch all"
