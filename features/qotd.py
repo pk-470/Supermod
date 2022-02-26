@@ -88,7 +88,6 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
                 return
             else:
                 qotd = response.content
-            qotd_wks.append_row([qotd_type, repeatable, qotd])
             await ctx.send(
                 "The "
                 + qotd_type.lower()
@@ -96,8 +95,14 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
                 + qotd
                 + "' ("
                 + repeatable_long
-                + ") was added to the spreadsheet."
+                + ") will be added to the spreadsheet. Do you want to submit (y/n)?"
             )
+            response = await self.bot.wait_for("message", timeout=30.0, check=check)
+            if response.content.lower()[0] == "y":
+                qotd_wks.append_row([qotd_type, repeatable, qotd])
+                await ctx.send("The QOTD was added to the spreadsheet.")
+            elif response.content.lower()[0] == "n":
+                await ctx.send("The QOTD was not added to the spreadsheet.")
 
         except asyncio.TimeoutError:
             await ctx.send("Time has run out.")
