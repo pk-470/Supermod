@@ -51,7 +51,7 @@ class Promotions(
         brief="Add a creator / partner for promotion.",
         description="Follow the bot's instructions to add a creator / partner for promotion.",
     )
-    async def add_promo(self, ctx):
+    async def promo_add(self, ctx):
         dates = [promo[4] + "/" + promo[5] for promo in promos_wks.get_all_values()[1:]]
         new_promo = []
 
