@@ -62,34 +62,36 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
         try:
             await ctx.send("Respond with 'stop' at any point to stop the process.")
             await ctx.send("QOTD type (Question / Activity):")
-            qotd_type = await self.bot.wait_for("message", timeout=30.0, check=check)
-            if qotd_type.lower() == "stop":
+            response = await self.bot.wait_for("message", timeout=30.0, check=check)
+            if response.content.lower() == "stop":
                 ctx.send("The process has stopped.")
                 return
-            elif qotd_type.lower()[0] == "q":
-                qotd_type_sh = "Question"
-            elif qotd_type.lower()[0] == "a":
-                qotd_type_sh = "Activity"
+            elif response.content.lower()[0] == "q":
+                qotd_type = "Question"
+            elif response.content.lower()[0] == "a":
+                qotd_type = "Activity"
             await ctx.send("Repeatable (Yes / No):")
-            repeatable = await self.bot.wait_for("message", timeout=30.0, check=check)
-            if repeatable.lower() == "stop":
+            response = await self.bot.wait_for("message", timeout=30.0, check=check)
+            if response.content.lower() == "stop":
                 ctx.send("The process has stopped.")
                 return
-            elif repeatable.lower()[0] == "y":
-                repeatable_sh = "Y"
+            elif response.content.lower()[0] == "y":
+                repeatable = "Y"
                 repeatable_long = "repeatable"
-            elif repeatable.lower()[0] == "n":
-                repeatable_sh = "N"
+            elif response.content.lower()[0] == "n":
+                repeatable = "N"
                 repeatable_long = "non-repeatable"
             await ctx.send("QOTD content:")
-            qotd = await self.bot.wait_for("message", timeout=30.0, check=check)
-            if qotd.lower() == "stop":
+            response = await self.bot.wait_for("message", timeout=30.0, check=check)
+            if response.content.lower() == "stop":
                 ctx.send("The process has stopped.")
                 return
-            qotd_wks.append_row([qotd_type_sh, repeatable_sh, qotd])
+            else:
+                qotd = response.content
+            qotd_wks.append_row([qotd_type, repeatable, qotd])
             await ctx.send(
                 "The "
-                + qotd_type_sh.lower()
+                + qotd_type.lower()
                 + " '"
                 + qotd
                 + "' ("
