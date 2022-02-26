@@ -184,7 +184,7 @@ class Album_Submissions(
                                 + " were not rejected."
                             )
                 else:
-                    ctx.send(
+                    await ctx.send(
                         "I don't know what you mean by '"
                         + response.content
                         + "'. Please start the submissions approval process again."

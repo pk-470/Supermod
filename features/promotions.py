@@ -70,7 +70,7 @@ class Promotions(
             elif response.content.lower()[0] == "p":
                 embed = "No"
             else:
-                ctx.send(
+                await ctx.send(
                     "I don't know what you mean by '"
                     + response.content
                     + "'. Please start the promo submission process again."
@@ -132,7 +132,7 @@ class Promotions(
             elif confirm.content.lower().startswith("n"):
                 await ctx.send("The promo was not submitted.")
             else:
-                ctx.send(
+                await ctx.send(
                     "I don't know what you mean by '"
                     + response.content
                     + "'. Please start the promo submission process again."

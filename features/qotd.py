@@ -71,7 +71,7 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
             elif response.content.lower()[0] == "a":
                 qotd_type = "Activity"
             else:
-                ctx.send(
+                await ctx.send(
                     "I don't know what you mean by '"
                     + response.content
                     + "'. Please start the QOTD submission process again."
@@ -89,7 +89,7 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
                 repeatable = "N"
                 repeatable_long = "non-repeatable"
             else:
-                ctx.send(
+                await ctx.send(
                     "I don't know what you mean by '"
                     + response.content
                     + "'. Please start the QOTD submission process again."
@@ -118,7 +118,7 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
             elif response.content.lower()[0] == "n":
                 await ctx.send("The QOTD was not added to the spreadsheet.")
             else:
-                ctx.send(
+                await ctx.send(
                     "I don't know what you mean by '"
                     + response.content
                     + "'. Please start the QOTD submission process again."
