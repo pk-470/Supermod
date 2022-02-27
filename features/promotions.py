@@ -37,7 +37,8 @@ else:
 promos_wks = gsa.open_by_url(getenv("QOTD_SHEET_URL")).get_worksheet(1)
 
 server = int(getenv("SERVER"))
-ads_channel = int(getenv("PROMOS_CHANNEL"))
+promos_channel = int(getenv("PROMOS_CHANNEL"))
+rejected_promos_channel = int(getenv("QOTD_APPROVAL_CHANNEL"))
 
 
 class Promotions(
@@ -167,15 +168,22 @@ class Promotions(
                             await guild.fetch_member(
                                 int(remove_spaces(member_id)[3:-1])
                             )
+                        post_in_channel = promos_channel
                     except:
-                        continue
+                        post_in_channel = rejected_promos_channel
+                        await self.bot.get_channel(rejected_promos_channel).send(
+                            "The following promo will not be posted, because"
+                            + " I can't find at least one of its related members:"
+                        )
                     promo_msg, mode = promo_make(promo)
                     if mode == "embed":
-                        await self.bot.get_channel(ads_channel).send(embed=promo_msg)
+                        await self.bot.get_channel(post_in_channel).send(
+                            embed=promo_msg
+                        )
                     else:
-                        await self.bot.get_channel(ads_channel).send(promo_msg)
+                        await self.bot.get_channel(post_in_channel).send(promo_msg)
                 else:
-                    await self.bot.get_channel(ads_channel).send(
+                    await self.bot.get_channel(promos_channel).send(
                         "**" + promo[2] + "**\n\n" + promo[3]
                     )
 
