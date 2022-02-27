@@ -138,7 +138,7 @@ def newsletter_create(sheet_data, date, message=None):
             "**__Omnivoracious Listeners New Music Newsletter (Week of "
             + title_day.strftime("%B")
             + " "
-            + title_day.strftime("%#d")
+            + day_trim(title_day.strftime("%d"))
             + ordinal(title_day.day)
             + "):__**\n\n"
             + "\n\n".join(albums_by_length)
