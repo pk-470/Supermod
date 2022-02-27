@@ -91,7 +91,7 @@ class Album_Submissions(
             # Submission checking options
 
             def check(resp):
-                return resp.author == ctx.author
+                return resp.author == ctx.author and resp.channel == ctx.channel
 
             try:
                 response = await self.bot.wait_for(
