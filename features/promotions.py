@@ -172,7 +172,7 @@ class Promotions(
                     except:
                         post_in_channel = rejected_promos_channel
                         await self.bot.get_channel(rejected_promos_channel).send(
-                            "The following promo will not be posted, because"
+                            "The following promo will not be posted because"
                             + " I can't find at least one of its related members:"
                         )
                     promo_msg, mode = promo_make(promo)
