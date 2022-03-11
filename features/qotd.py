@@ -132,7 +132,7 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
             await ctx.send("Something went wrong. Please try again.")
 
     # QOTD loop
-    @tasks.loop(minutes=60)
+    @tasks.loop(minutes=1)
     async def qotd_loop(self):
         time_now = pendulum.now("EST")
         print(
