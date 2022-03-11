@@ -25,8 +25,10 @@ listeners_role_mention = "<@&" + str(getenv("LISTENERS_ROLE")) + ">"
 
 submissions_open_day = "Saturday"
 submissions_open_hour = 20
-submissions_close_day = "Wednesday"
-submissions_close_hour = 20
+submissions_open_minute = 0
+submissions_closed_day = "Wednesday"
+submissions_closed_hour = 20
+submission_closed_minute = 0
 
 
 class Submissions_status(commands.Cog):
@@ -35,16 +37,18 @@ class Submissions_status(commands.Cog):
         self.submissions_status.start()
 
     # Submissions status announcement loop
-    @tasks.loop(minutes=60)
+    @tasks.loop(minutes=1)
     async def submissions_status(self):
+        time_now = pendulum.now("EST")
         print(
             "Submissions status loop is working ("
-            + pendulum.now("EST").strftime("%Y-%m-%d, %H:%M:%S EST")
+            + time_now.strftime("%Y-%m-%d, %H:%M:%S EST")
             + ")."
         )
         if (
-            pendulum.now("EST").strftime("%A") == submissions_open_day
-            and pendulum.now("EST").hour == submissions_open_hour
+            time_now.strftime("%A") == submissions_open_day
+            and time_now.hour == submissions_open_hour
+            and time_now.minute == submissions_open_minute
         ):
             await self.bot.get_channel(announcements_channel).send(
                 "Hello "
@@ -59,8 +63,9 @@ class Submissions_status(commands.Cog):
                 + ")."
             )
         if (
-            pendulum.now("EST").strftime("%A") == submissions_close_day
-            and pendulum.now("EST").hour == submissions_close_hour
+            time_now.strftime("%A") == submissions_closed_day
+            and time_now.hour == submissions_closed_hour
+            and time_now.minute == submission_closed_minute
         ):
             await self.bot.get_channel(announcements_channel).send(
                 "Hello "

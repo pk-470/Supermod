@@ -34,6 +34,7 @@ qotd_channel = int(getenv("QOTD_CHANNEL"))
 qotd_approval_channel = int(getenv("QOTD_APPROVAL_CHANNEL"))
 
 qotd_hour = 6
+qotd_minute = 0
 
 
 class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
@@ -133,12 +134,13 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
     # QOTD loop
     @tasks.loop(minutes=60)
     async def qotd_loop(self):
+        time_now = pendulum.now("EST")
         print(
             "QOTD loop is working ("
-            + pendulum.now("EST").strftime("%Y-%m-%d, %H:%M:%S EST")
+            + time_now.strftime("%Y-%m-%d, %H:%M:%S EST")
             + ")."
         )
-        if pendulum.now("EST").hour == qotd_hour:
+        if time_now.hour == qotd_hour and time_now.minute == qotd_minute:
             await qotd_interact(
                 self.bot, self.bot.get_channel(qotd_approval_channel), timeout=3600
             )
