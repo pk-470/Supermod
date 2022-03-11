@@ -9,7 +9,7 @@ from os import getenv
 
 # Libraries for various functions
 from random import choice
-import asyncio
+from asyncio.exceptions import TimeoutError
 import pendulum
 
 # Import data according to local_mode status
@@ -126,7 +126,7 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
                 )
                 return
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             await ctx.send("Time has run out.")
         except:
             await ctx.send("Something went wrong. Please try again.")
@@ -198,7 +198,7 @@ async def qotd_interact(bot, channel, timeout):
                 await channel.send("The QOTD was rejected.")
 
     except TimeoutError:
-        channel.send("Time has run out.")
+        await channel.send("Time has run out.")
 
 
 def qotd_get():

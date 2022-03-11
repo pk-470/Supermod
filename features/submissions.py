@@ -14,7 +14,7 @@ from features.releases import post_split
 from os import getenv
 
 # Libraries for various functions
-import asyncio
+from asyncio.exceptions import TimeoutError
 
 # Import data according to local_mode status
 local_mode = open("mode_switch.txt", "r").read()
@@ -194,7 +194,7 @@ class Album_Submissions(
                     )
                 return
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 await ctx.send("Time has run out.")
             except:
                 await ctx.send("Something went wrong. Please try again.")
