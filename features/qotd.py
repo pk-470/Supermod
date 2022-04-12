@@ -134,7 +134,7 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
     # QOTD loop
     @tasks.loop(minutes=1)
     async def qotd_loop(self):
-        time_now = pendulum.now("EST")
+        time_now = pendulum.now("America/Toronto")
         print(
             "QOTD loop is working ("
             + time_now.strftime("%Y-%m-%d, %H:%M:%S EST")
@@ -223,7 +223,8 @@ def mark_as_used(question):
 
 
 async def qotd_post(question, bot, ctx, overwrite=None):
-    date_str = pendulum.now("EST").strftime("%m/%#d/%Y")
+    time_now = pendulum.now("America/Toronto")
+    date_str = time_now.strftime("%m/%#d/%Y")
     if overwrite == None:
         await bot.get_channel(qotd_channel).send(
             "__**"

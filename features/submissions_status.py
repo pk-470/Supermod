@@ -39,7 +39,7 @@ class Submissions_status(commands.Cog):
     # Submissions status announcement loop
     @tasks.loop(minutes=1)
     async def submissions_status(self):
-        time_now = pendulum.now("EST")
+        time_now = pendulum.now("America/Toronto")
         print(
             "Submissions status loop is working ("
             + time_now.strftime("%Y-%m-%d, %H:%M:%S EST")
@@ -59,7 +59,7 @@ class Submissions_status(commands.Cog):
             )
             print(
                 '"Submissions is open" message has been posted (date: '
-                + pendulum.now("EST").strftime("%Y-%m-%d")
+                + time_now.strftime("%Y-%m-%d")
                 + ")."
             )
         if (
@@ -81,7 +81,7 @@ class Submissions_status(commands.Cog):
             )
             print(
                 '"Submissions is closed" message has been posted (date: '
-                + pendulum.now("EST").strftime("%Y-%m-%d")
+                + time_now.strftime("%Y-%m-%d")
                 + ")."
             )
 

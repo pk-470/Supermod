@@ -147,9 +147,10 @@ class Promotions(
 
     @tasks.loop(minutes=60)
     async def ads_loop(self):
+        time_now = pendulum.now("America/Toronto")
         print(
             "Promotions loop is working ("
-            + pendulum.now("EST").strftime("%Y-%m-%d, %H:%M:%S")
+            + time_now.strftime("%Y-%m-%d, %H:%M:%S")
             + ")."
         )
         promos = promos_wks.get_all_values()[1:]
@@ -157,10 +158,8 @@ class Promotions(
             promo = [remove_spaces(i) for i in promo]
             promo[5] = promo[5].split(":")[0]
             if promo[4].lower().startswith("last"):
-                promo[4] = pendulum.now("EST")._last_of_month().day
-            if pendulum.now("EST").day == int(promo[4]) and pendulum.now(
-                "EST"
-            ).hour == int(promo[5]):
+                promo[4] = time_now._last_of_month().day
+            if time_now.day == int(promo[4]) and time_now.hour == int(promo[5]):
                 guild = self.bot.get_guild(server)
                 if promo[6] != "N/A":
                     try:

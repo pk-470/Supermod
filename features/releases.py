@@ -44,7 +44,7 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
     )
     async def news(self, ctx, date_str=None):
         if date_str == None:
-            date = pendulum.today("EST")
+            date = pendulum.today("America/Toronto")
         else:
             try:
                 date = pendulum.from_format(date_str, "M/D/YYYY")
@@ -74,7 +74,7 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
             await ctx.send("What will be this week's newsletter message?")
             return
         else:
-            date = pendulum.today("EST")
+            date = pendulum.today("America/Toronto")
             sheet_data = news_sheet.sheet1.get_all_values()
             posts = newsletter_create(sheet_data, date, message)
             for post in posts:
