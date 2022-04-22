@@ -1,1 +1,1 @@
-worker: python3.10 Supermod.py
+worker: python Supermod.py
