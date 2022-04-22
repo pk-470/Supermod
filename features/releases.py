@@ -38,9 +38,9 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
 
     @commands.command(
         brief="Fetch a newsletter from any week (1/1/2021 onwards).",
-        description="Fetch the newsletter from a particular week from 1/1/2021 onwards (optional "
-        + "argument: date in M/D/YYYY format). If date is missing, the current week's newsletter "
-        + "is returned.",
+        description="Fetch the newsletter from a particular week from 1/1/2021 onwards "
+        "(optional argument: date in M/D/YYYY format). If date is missing, the current "
+        "week's newsletter is returned.",
     )
     async def news(self, ctx, date_str=None):
         if date_str == None:
@@ -59,7 +59,7 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
                 )
                 return
 
-        sheet = str(date.year) + " OL Rock Albums List"
+        sheet = f"{date.year} OL Rock Albums List"
         sheet_data = news_sheet.worksheet(sheet).get_all_values()
         posts = newsletter_create(sheet_data, date)
         for post in posts:
@@ -120,9 +120,7 @@ def newsletter_create(sheet_data, date, message=None):
     albums_by_length = []
     for length in album_lengths:
         albums_by_length.append(
-            "__*New "
-            + plural(length)
-            + ":*__\n"
+            f"__*New {plural(length)}:*__\n"
             + "\n".join(
                 [
                     album.news_format()
@@ -139,8 +137,7 @@ def newsletter_create(sheet_data, date, message=None):
             + title_day.strftime("%B")
             + " "
             + day_trim(title_day.strftime("%d"))
-            + ordinal(title_day.day)
-            + "):__**\n\n"
+            + f"{ordinal(title_day.day)}):__**\n\n"
             + "\n\n".join(albums_by_length)
         )
     else:
@@ -149,12 +146,9 @@ def newsletter_create(sheet_data, date, message=None):
             + title_day.strftime("%B")
             + " "
             + day_trim(title_day.strftime("%d"))
-            + ordinal(title_day.day)
-            + "):__**\n\n"
+            + f"{ordinal(title_day.day)}):__**\n\n"
             + "\n\n".join(albums_by_length)
-            + "\n\n"
-            + message
-            + "\n<"
+            + f"\n\n{message}\n<"
             + getenv("NEWS_SHEET_URL")
             + ">\n\nFeel free to contribute to our ever-growing newsletter:\n<"
             + getenv("NEWS_FORM_URL")
@@ -219,9 +213,9 @@ def ordinal(num):
 
 def plural(string):
     if string[-1] in ["s", "sh", "ch", "x", "z"]:
-        return string + "es"
+        return f"{string}es"
     else:
-        return string + "s"
+        return f"{string}s"
 
 
 def day_trim(day):

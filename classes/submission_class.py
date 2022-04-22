@@ -49,40 +49,25 @@ class Submission(Album):
         self.message = message
         self.request = request
         self.link = "https://www.google.com/search?q=" + url.quote_plus(
-            self.artist + " " + self.title
+            f"{self.artist} {self.title}"
         )
 
     def masterlist_format_no_mention(self):
         return (
-            self.title
-            + " by "
-            + self.artist
-            + " ("
-            + self.release_date
-            + ") ("
+            f"{self.title} by {self.artist} ({self.release_date}) ("
             + ", ".join(self.genres)
             + ")"
         )
 
     def masterlist_format(self):
-        return (
-            self.masterlist_format_no_mention() + " <@!" + str(self.submitter_id) + ">"
-        )
+        return self.masterlist_format_no_mention() + f" <@!{self.submitter_id}>"
 
     def sub_check_msg_full(self):
         return (
-            "Album: **"
-            + self.masterlist_format_no_mention()
-            + "**, submitted by **"
-            + self.submitter_name
-            + "** ("
-            + str(self.submitter_id)
-            + "), request: **"
-            + str(self.request)
-            + "** in **"
-            + self.masterlist.upper()
-            + "**, link: "
-            + self.link
+            f"Album: **{self.masterlist_format_no_mention()}**, "
+            f"submitted by **{self.submitter_name}** ({self.submitter_id}), "
+            f"request: **{self.request}** in **{self.masterlist.upper()}**, "
+            f"link: {self.link}"
         )
 
 

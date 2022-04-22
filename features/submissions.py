@@ -61,12 +61,12 @@ class Album_Submissions(
 
     @commands.command(
         brief="Fetch and approve or reject submissions for the masterlists.",
-        description="Optional argument: masterlist name (i.e. one of 'voted', 'new', 'modern',"
-        + " 'classic', 'theme') to only fetch submissions for that masterlist, or 'error' to fetch"
-        + " messages in #submissions which cannot be correctly interpreted as a submission by the bot."
-        + " Once the submissions have been fetched, you have 20 minutes to respond with 'ok' in order"
-        + " to approve all submissions, 'reject' followed by the numbers of the submissions you want to"
-        + " reject, or 'stop' to stop the process.",
+        description="Optional argument: masterlist name (i.e. one of 'voted', 'new', 'modern', "
+        "'classic', 'theme') to only fetch submissions for that masterlist, or 'error' to fetch "
+        "messages in #submissions which cannot be correctly interpreted as a submission by the bot. "
+        "Once the submissions have been fetched, you have 20 minutes to respond with 'ok' in order "
+        "to approve all submissions, 'reject' followed by the numbers of the submissions you want to "
+        "reject, or 'stop' to stop the process.",
     )
     async def subs(self, ctx, masterlist=None):
         # Check if an appropriate masterlist is chosen, otherwise prompt for one.
@@ -83,9 +83,9 @@ class Album_Submissions(
                 return
 
             await ctx.send(
-                "You have 20 minutes to respond with 'ok' in order to approve all"
-                + " submissions, 'reject' followed by the numbers of the submissions"
-                + " you want to reject, or 'stop' to stop the process."
+                "You have 20 minutes to respond with 'ok' in order to approve all "
+                "submissions, 'reject' followed by the numbers of the submissions "
+                "you want to reject, or 'stop' to stop the process."
             )
 
             # Submission checking options
@@ -129,8 +129,7 @@ class Album_Submissions(
                                 ).send(sub.masterlist_format())
                         await ctx.send(
                             "All new submissions without errors were added to the "
-                            + masterlist.upper()
-                            + " masterlist."
+                            f"{masterlist.upper()} masterlist."
                         )
 
                 # Reject and delete submissions
@@ -149,8 +148,7 @@ class Album_Submissions(
                     if len(sub_indices) == 1:
                         await ctx.send(
                             "Are you sure you want to reject album "
-                            + sub_indices[0]
-                            + " (y/n)?"
+                            f"{sub_indices[0]} (y/n)?"
                         )
                     elif len(sub_indices) > 1:
                         await ctx.send(
@@ -170,16 +168,14 @@ class Album_Submissions(
                         for msg in sub_msgs:
                             await msg.delete()
                         if len(sub_indices) == 1:
-                            await ctx.send("Album " + sub_indices[0] + " was rejected.")
+                            await ctx.send(f"Album {sub_indices[0]} was rejected.")
                         elif len(sub_indices) > 1:
                             await ctx.send(
                                 "Albums " + ", ".join(sub_indices) + " were rejected."
                             )
                     else:
                         if len(sub_indices) == 1:
-                            await ctx.send(
-                                "Album " + sub_indices[0] + " was not rejected."
-                            )
+                            await ctx.send(f"Album {sub_indices[0]} was not rejected.")
                         elif len(sub_indices) > 1:
                             await ctx.send(
                                 "Albums "
@@ -188,9 +184,8 @@ class Album_Submissions(
                             )
                 else:
                     await ctx.send(
-                        "I don't know what you mean by '"
-                        + response.content
-                        + "'. Please start the submissions approval process again."
+                        f"I don't know what you mean by '{response.content}'. "
+                        "Please start the submissions approval process again."
                     )
                 return
 
@@ -201,9 +196,9 @@ class Album_Submissions(
 
         else:
             await ctx.send(
-                "Please provide a valid masterlist, or 'error' if you want to fetch all"
-                + " new submissions with errors, or no masterlist if you want to fetch all"
-                + " new submissions from all lists (including those with errors)."
+                "Please provide a valid masterlist, or 'error' if you want to fetch all "
+                "new submissions with errors, or no masterlist if you want to fetch all "
+                "new submissions from all lists (including those with errors)."
             )
 
 
@@ -266,7 +261,7 @@ def discussed_check(sub_album, discussed_albums):
     # Check if a submission has been reviewed before in the server.
     try:
         row = discussed_albums.index((sub_album.title, sub_album.artist))
-        return True, albums_wks.acell("C" + str(row + 2)).value
+        return True, albums_wks.acell(f"C{row + 2}").value
     except:
         return False, 0
 
@@ -294,36 +289,20 @@ async def subs_check_msg(ctx, bot, masterlist):
             # Check for errors.
             if type(sub).__name__ == "Sub_error":
                 check_list.append(
-                    "**"
-                    + ind
-                    + ".** "
-                    + "Something went wrong with submission <"
-                    + sub.message.jump_url
-                    + ">."
+                    f"**{ind}.** Something went wrong with submission <{sub.message.jump_url}>."
                 )
             else:
                 # Check whether the album has been discussed before.
                 check, week = discussed_check(sub, discussed_albums)
                 if check:
                     check_list.append(
-                        "**"
-                        + ind
-                        + ".** "
-                        + sub.title
-                        + " by "
-                        + sub.artist
-                        + " seems to have been discussed already on week "
-                        + week
-                        + " (submitted by "
-                        + sub.submitter_name
-                        + " ("
-                        + str(sub.submitter_id)
-                        + "), link to submission: <"
-                        + sub.message.jump_url
-                        + ">)."
+                        f"**{ind}.** {sub.title} by {sub.artist} "
+                        f"seems to have been discussed already on week {week} "
+                        f"(submitted by {sub.submitter_name} ({sub.submitter_id}), "
+                        f"link to submission: <{sub.message.jump_url}>)."
                     )
                 else:
-                    check_list.append("**" + ind + ".** " + sub.sub_check_msg_full())
+                    check_list.append(f"**{ind}.** {sub.sub_check_msg_full()}")
 
         # Create post.
         subs_check_msg_full = "\n".join(check_list)
@@ -340,9 +319,7 @@ async def subs_check_msg(ctx, bot, masterlist):
             await ctx.send("There are no new submissions with errors.")
         else:
             await ctx.send(
-                "There are no new submissions for the "
-                + masterlist.upper()
-                + " masterlist."
+                f"There are no new submissions for the {masterlist.upper()} masterlist."
             )
 
         return []

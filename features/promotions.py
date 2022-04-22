@@ -53,7 +53,7 @@ class Promotions(
         description="Follow the bot's instructions to add a creator / partner for promotion.",
     )
     async def promo_add(self, ctx):
-        dates = [promo[4] + "/" + promo[5] for promo in promos_wks.get_all_values()[1:]]
+        dates = [f"{promo[4]}/{promo[5]}" for promo in promos_wks.get_all_values()[1:]]
         new_promo = []
 
         def check(resp):
@@ -72,9 +72,8 @@ class Promotions(
                 embed = "No"
             else:
                 await ctx.send(
-                    "I don't know what you mean by '"
-                    + response.content
-                    + "'. Please start the promo submission process again."
+                    f"I don't know what you mean by '{response.content}'. "
+                    "Please start the promo submission process again."
                 )
                 return
             new_promo.extend([response.content.capitalize(), embed])
@@ -108,17 +107,13 @@ class Promotions(
                 await ctx.send("The promo submission process has stopped.")
                 return
             new_promo.append(
-                " ".join(["<@!" + id + ">" for id in response.content.split(" ") if id])
+                " ".join([f"<@!{id}>" for id in response.content.split(" ") if id])
             )
 
             new_promo_msg, mode = promo_make(new_promo)
             await ctx.send(
-                "The new promo will appear every "
-                + new_date[0]
-                + ordinal(int(new_date[0]))
-                + " day of each month at "
-                + new_date[1]
-                + " as follows:"
+                f"The new promo will appear every {new_date[0]} {ordinal(int(new_date[0]))} "
+                f"day of each month at {new_date[1]} as follows:"
             )
             if mode == "embed":
                 await ctx.send(embed=new_promo_msg)
@@ -134,9 +129,8 @@ class Promotions(
                 await ctx.send("The promo was not submitted.")
             else:
                 await ctx.send(
-                    "I don't know what you mean by '"
-                    + response.content
-                    + "'. Please start the promo submission process again."
+                    f"I don't know what you mean by '{response.content}'. "
+                    "Please start the promo submission process again."
                 )
                 return
 
@@ -171,8 +165,8 @@ class Promotions(
                     except:
                         post_in_channel = rejected_promos_channel
                         await self.bot.get_channel(rejected_promos_channel).send(
-                            "The following promo will not be posted because"
-                            + " I can't find at least one of its related members:"
+                            "The following promo will not be posted because I can't "
+                            "find at least one of its related members in the server:"
                         )
                     promo_msg, mode = promo_make(promo)
                     if mode == "embed":
@@ -183,14 +177,14 @@ class Promotions(
                         await self.bot.get_channel(post_in_channel).send(promo_msg)
                 else:
                     await self.bot.get_channel(promos_channel).send(
-                        "**" + promo[2] + "**\n\n" + promo[3]
+                        f"**{promo[2]}**\n\n{promo[3]}"
                     )
 
 
 def promo_make(promo):
     if promo[1].lower().startswith("y"):
         embed = Embed(color=Color.blue())
-        posts = post_split(promo[6] + "\n\n" + promo[3], 1024)
+        posts = post_split(f"{promo[6]}\n\n{promo[3]}", 1024)
         for i in range(len(posts)):
             if i == 0:
                 embed.add_field(name=promo[2], value=posts[0], inline=False)
@@ -198,7 +192,7 @@ def promo_make(promo):
                 embed.add_field(name="\u200b", value=posts[i], inline=False)
         return embed, "embed"
     else:
-        return "**" + promo[2] + "**\n\n" + promo[3], "no embed"
+        return f"**{promo[2]}**\n\n{promo[3]}", "no embed"
 
 
 # Add cog to bot

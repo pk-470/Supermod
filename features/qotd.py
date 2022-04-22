@@ -44,17 +44,16 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
 
     @commands.command(
         brief="Fetch a QOTD.",
-        description="Fetch a QOTD. React with a green checkmark to post the question and"
-        + " mark it as used, with a red X to reject the question, and with E to post an"
-        + " edited version of the question and mark the original as used.",
+        description="Fetch a QOTD. React with a green checkmark to post the question and "
+        "mark it as used, with a red X to reject the question, and with E to post an "
+        "edited version of the question and mark the original as used.",
     )
     async def qotd(self, ctx):
         await qotd_interact(self.bot, ctx, timeout=60)
 
     @commands.command(
         brief="Add a question / activity to the spreadsheet.",
-        description="Follow the bot's instructions to add a question"
-        + " / activity to the spreadsheet.",
+        description="Follow the bot's instructions to add a question / activity to the spreadsheet.",
     )
     async def qotd_add(self, ctx):
         def check(resp):
@@ -73,9 +72,8 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
                 qotd_type = "Activity"
             else:
                 await ctx.send(
-                    "I don't know what you mean by '"
-                    + response.content
-                    + "'. Please start the QOTD submission process again."
+                    f"I don't know what you mean by '{response.content}'. "
+                    "Please start the QOTD submission process again."
                 )
                 return
             await ctx.send("Repeatable (Yes / No):")
@@ -91,9 +89,8 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
                 repeatable_long = "non-repeatable"
             else:
                 await ctx.send(
-                    "I don't know what you mean by '"
-                    + response.content
-                    + "'. Please start the QOTD submission process again."
+                    f"I don't know what you mean by '{response.content}'. "
+                    "Please start the QOTD submission process again."
                 )
                 return
             await ctx.send("QOTD content:")
@@ -104,13 +101,8 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
             else:
                 qotd = response.content
             await ctx.send(
-                "The "
-                + qotd_type.lower()
-                + " '"
-                + qotd
-                + "' ("
-                + repeatable_long
-                + ") will be added to the spreadsheet. Do you want to submit (y/n)?"
+                f"The {qotd_type.lower()} '{qotd}' ({repeatable_long}) "
+                "will be added to the spreadsheet. Do you want to submit (y/n)?"
             )
             response = await self.bot.wait_for("message", timeout=30.0, check=check)
             if response.content.lower()[0] == "y":
@@ -120,9 +112,8 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
                 await ctx.send("The QOTD was not added to the spreadsheet.")
             else:
                 await ctx.send(
-                    "I don't know what you mean by '"
-                    + response.content
-                    + "'. Please start the QOTD submission process again."
+                    f"I don't know what you mean by '{response.content}'. "
+                    "Please start the QOTD submission process again."
                 )
                 return
 
@@ -166,13 +157,10 @@ async def qotd_interact(bot, channel, timeout):
             await channel.send("The QOTD was rejected.")
         elif str(reaction.emoji) == "🇪":
             await channel.send(
-                "Respond with an edited version of the "
-                + question[0].lower()
-                + " which I will post instead (I will mark the original "
-                + question[0].lower()
-                + " as used in the spreadsheet without changing its template)."
-                + " Respond with 'stop' if you want me to stop waiting for"
-                + " a response."
+                f"Respond with an edited version of the {question[0].lower()} "
+                f"which I will post instead (I will mark the original {question[0].lower()} "
+                "as used in the spreadsheet without changing its template). "
+                "Respond with 'stop' if you want me to stop waiting for a response."
             )
 
             def check(response):
@@ -180,6 +168,7 @@ async def qotd_interact(bot, channel, timeout):
 
             response = await bot.wait_for("message", timeout=600.0, check=check)
             if response.content.lower() == "stop":
+                await channel.send("The QOTD editing process has stopped.")
                 return
             await channel.send("The following will be posted as QOTD:")
             qotd = await channel.send(response.content)
@@ -227,24 +216,16 @@ async def qotd_post(question, bot, ctx, overwrite=None):
     date_str = time_now.strftime("%m/%#d/%Y")
     if overwrite == None:
         await bot.get_channel(qotd_channel).send(
-            "__**"
-            + question[0].capitalize()
-            + " of the Day "
-            + date_str
-            + ":**__\n\n"
-            + question[2]
+            f"__**{question[0].capitalize()} of the Day {date_str}:**__"
+            f"\n\n{question[2]}"
         )
     else:
         await bot.get_channel(qotd_channel).send(
-            "__**"
-            + question[0].capitalize()
-            + " of the Day "
-            + date_str
-            + ":**__\n\n"
-            + overwrite
+            f"__**{question[0].capitalize()} of the Day {date_str}:**__"
+            f"\n\n{overwrite}"
         )
     mark_as_used(question)
-    conf_msg = "QOTD has been posted (date: " + date_str + ")."
+    conf_msg = f"QOTD has been posted (date: {date_str})."
     await ctx.send(conf_msg)
     print(conf_msg)
 

@@ -33,14 +33,12 @@ features = [
 # On ready
 @bot.event
 async def on_ready():
-    print("I am logged in as {0.user}.".format(bot))
+    print(f"I am logged in as {bot.user}.")
     # Load all features
     for feature in features:
-        bot.load_extension("features." + feature)
+        bot.load_extension(f"features.{feature}")
         print(
-            "Feature "
-            + feature
-            + " has been loaded ("
+            f"Feature {feature} has been loaded ("
             + pendulum.now().strftime("%Y-%m-%d, %H:%M:%S")
             + ")."
         )

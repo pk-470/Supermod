@@ -51,11 +51,8 @@ class Submissions_status(commands.Cog):
             and time_now.minute == submissions_open_minute
         ):
             await self.bot.get_channel(announcements_channel).send(
-                "Hello "
-                + listeners_role_mention
-                + ". "
-                + self.bot.get_channel(submissions_channel).mention
-                + " is now open."
+                f"Hello {listeners_role_mention}. "
+                f"{self.bot.get_channel(submissions_channel).mention} is now open."
             )
             print(
                 '"Submissions is open" message has been posted (date: '
@@ -68,16 +65,13 @@ class Submissions_status(commands.Cog):
             and time_now.minute == submission_closed_minute
         ):
             await self.bot.get_channel(announcements_channel).send(
-                "Hello "
-                + listeners_role_mention
-                + ". "
-                + self.bot.get_channel(submissions_channel).mention
-                + " is now closed and voting is open.\nGo to the "
-                + self.bot.get_channel(voted_channel).mention
-                + " and use any of the :thumbs up: emoji on the album you would like"
-                + " to select and our voting bot will send you a confirmation via DM."
-                + " You may vote 10 times, max of 1 time per album.\n Good luck choosing!"
-                + "\n\nUse %help for a full list of commands."
+                f"Hello {listeners_role_mention}. "
+                f"{self.bot.get_channel(submissions_channel).mention} is now closed "
+                f"and voting is open.\nGo to the {self.bot.get_channel(voted_channel).mention} "
+                "and use any of the :thumbs up: emoji on the album you would like "
+                "to select and our voting bot will send you a confirmation via DM. "
+                "You may vote 10 times, max of 1 time per album.\n Good luck choosing!\n\n"
+                "Use %help for a full list of commands."
             )
             print(
                 '"Submissions is closed" message has been posted (date: '

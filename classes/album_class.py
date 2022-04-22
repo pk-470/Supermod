@@ -27,27 +27,15 @@ class Album:
                 "  ".join(
                     [discord_country_flags[country] for country in self.countries]
                 )
-                + "  | "
-                + self.artist
-                + " - '"
-                + self.title
-                + "' (Genre: "
+                + f"  | {self.artist} - '{self.title}' (Genre: "
                 + ", ".join(self.genres)
                 + ")"
             )
         except:
             print(
-                "Something went wrong with album "
-                + self.title
-                + " by "
-                + self.artist
-                + " from "
-                + str(self.countries)
-                + " (Genre: "
-                + str(self.genres)
-                + ", Release date: "
-                + str(self.release_date)
-                + " )."
+                f"Something went wrong with album {self.title} by {self.artist} "
+                f"from {self.countries} (Genre: {self.genres}, "
+                f"Release date: {self.release_date})."
             )
             return ""
 
