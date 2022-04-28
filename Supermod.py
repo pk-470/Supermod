@@ -12,7 +12,7 @@ bot = commands.Bot(command_prefix=",", case_insensitive=True)
 
 # ------------------------------------------------------MODE-SWITCH------------------------------------------------------
 # Choose the mode (ON to run the bot locally, OFF to upload and run on Heroku)
-local_mode = "ON"
+local_mode = "OFF"
 # ----------------------------------------------------MODE-SWITCH-END----------------------------------------------------
 
 with open("mode_switch.txt", "w") as switch:
