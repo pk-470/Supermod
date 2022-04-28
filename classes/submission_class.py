@@ -54,7 +54,7 @@ class Submission(Album):
 
     def masterlist_format_no_mention(self):
         return (
-            f"{self.title} by {self.artist} ({self.release_date}) ("
+            f"{self.title} _by_ {self.artist} ({self.release_date}) ("
             + ", ".join(self.genres)
             + ")"
         )

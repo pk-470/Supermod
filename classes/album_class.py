@@ -1,3 +1,6 @@
+# Titlecase
+from titlecase import titlecase
+
 # Flag emoji archive
 from data.discord_country_flags import discord_country_flags
 
@@ -51,7 +54,12 @@ def remove_spaces(string):
             start = start + 1
         while string[end - 1] in (" ", "\n"):
             end = end - 1
-        return string[start:end]
+
+        string = string[start:end]
+        if string.upper() == string:
+            return string
+        else:
+            return titlecase(string)
     else:
         return ""
 
@@ -60,7 +68,9 @@ def handle_input(strings):
     if strings == None:
         return strings
     else:
-        return [remove_spaces(string) for string in strings.split(", ")]
+        return [
+            remove_spaces(string) for string in strings.replace("/", ", ").split(", ")
+        ]
 
 
 def handle_length(length):

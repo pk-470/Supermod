@@ -71,7 +71,10 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
     )
     async def news_full(self, ctx, *, message=None):
         if message == None:
-            await ctx.send("What will be this week's newsletter message?")
+            await ctx.send(
+                "To add a message to this week's official newsletter, "
+                "write it after the 'news_full' command (e.g. news_full 'message')."
+            )
             return
         else:
             date = pendulum.today("America/Toronto")
