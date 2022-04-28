@@ -1,3 +1,4 @@
 discord.py==1.7.3
 gspread==5.3.2
 pendulum==2.1.2
+titlecase==2.3
