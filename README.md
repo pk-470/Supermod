@@ -2,7 +2,7 @@
 
 A bot handling various tasks for the Discord server "Omnivoracious Listeners".
 
-Version 2.2:
+Version 2.8:
 
 Finished features:
 
@@ -15,13 +15,13 @@ Finished features:
 - Approving or rejecting album submissions
 - Checking whether a submission has been up for discussion in the server before
 - Creators, friends and partners ads
+- Checking for double submissions
+- Checking whether the user has already submitted an album or not
 
 Currently working on:
 
-- Automating album submissions
+- Further automating album submissions
 
 To appear (maybe):
 
-- Checking whether the user has already submitted an album or not
-- Checking if the album is already submitted or if it has appeared in the server before
 - Fetching releases filtered by artist, genre etc.
