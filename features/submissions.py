@@ -152,7 +152,7 @@ class Album_Submissions(
             "theme",
             "error",
         ):
-            subs_dict = await subs_check_msg(ctx, self.bot, masterlist)
+            subs_dict = await subs_check_msg(ctx, self.bot, masterlist.lower())
             if not subs_dict:
                 return
 
@@ -272,7 +272,7 @@ class Album_Submissions(
             )
 
 
-async def submit_album(bot, sub):
+async def submit_album(bot, sub: Submission):
     # Submit an album.
     await bot.get_channel(masterlist_channel_dict[sub.masterlist]).send(
         sub.masterlist_format()
@@ -293,26 +293,26 @@ async def submit_album(bot, sub):
 # -----------------------------------------------------VARIOUS-CHECK-FUNCTIONS-----------------------------------------------------
 
 
-def discussed_check(sub_album):
+def discussed_check(sub: Submission):
     # Check if a submission has been reviewed before in the server.
     try:
-        row = discussed_albums.index((sub_album.title, sub_album.artist))
+        row = discussed_albums.index((sub.title, sub.artist))
         return True, albums_wks.acell(f"C{row + 2}").value
     except:
         return False, 0
 
 
-def duplicate_check(sub_album):
+def duplicate_check(sub: Submission):
     # Check if an album is already in the masterlist.
-    if (sub_album.artist, sub_album.title) in existing_subs_dict[sub_album.masterlist]:
+    if (sub.artist, sub.title) in existing_subs_dict[sub.masterlist]:
         return True
     else:
         return False
 
 
-def submitted_already(sub_album):
+def submitted_already(sub: Submission):
     # Check if a user has already submitted an album in the masterlist.
-    if sub_album.submitter_id in submitters_dict[sub_album.masterlist]:
+    if sub.submitter_id in submitters_dict[sub.masterlist]:
         return True
     else:
         return False
