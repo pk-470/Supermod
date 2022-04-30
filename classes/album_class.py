@@ -3,6 +3,7 @@ from titlecase import titlecase
 
 # Flag emoji archive
 from data.discord_country_flags import discord_country_flags
+from data.genres import *
 
 
 class Album:
@@ -10,15 +11,17 @@ class Album:
         self,
         artist,
         title,
-        genres=None,
-        release_date=None,
+        genres,
+        release_date,
+        genre_categories=None,
         countries=None,
         length=None,
         ffo=None,
     ):
         self.artist = remove_spaces(artist)
         self.title = remove_spaces(title)
-        self.genres = handle_input(genres)
+        self.genres = handle_genres(genres)
+        self.genre_categories = handle_genre_categories(genre_categories)
         self.length = handle_length(length)
         self.release_date = remove_spaces(release_date)
         self.countries = handle_input(countries)
@@ -44,7 +47,7 @@ class Album:
 
 
 def remove_spaces(string):
-    if string == None:
+    if string is None:
         return None
     string = str(string)
     if string:
@@ -65,11 +68,36 @@ def remove_spaces(string):
 
 
 def handle_input(strings):
-    if strings == None:
-        return strings
+    if strings is None:
+        return None
     else:
         return [
             remove_spaces(string) for string in strings.replace("/", ", ").split(", ")
+        ]
+
+
+def handle_genres(genres):
+    if genres is None:
+        return None
+    else:
+        genres = handle_input(genres)
+        for genre in genres:
+            if genre in metal_genres:
+                genre = genre + " Metal"
+
+        return genres
+
+
+def handle_genre_categories(genre_categories):
+    if genre_categories is None:
+        return None
+    else:
+        genre_categories = handle_input(genre_categories)
+        return [
+            genre_categories_dict[genre_category]
+            if genre_category in genre_categories_dict
+            else genre_category
+            for genre_category in genre_categories
         ]
 
 

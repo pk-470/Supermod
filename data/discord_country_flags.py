@@ -48,6 +48,7 @@ discord_country_flags = {
     "Cook Islands": ":flag_ck:",
     "Chile": ":flag_cl:",
     "Cameroon": ":flag_cm:",
+    "China": ":flag_cn:",
     "People's Republic of China": ":flag_cn:",
     "Colombia": ":flag_co:",
     "Clipperton Island": ":flag_cp:",

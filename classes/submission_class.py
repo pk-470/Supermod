@@ -24,6 +24,7 @@ class Submission(Album):
             title,
             genres,
             release_date,
+            genre_categories=None,
             countries=None,
             length=None,
             ffo=None,

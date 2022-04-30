@@ -2,7 +2,7 @@
 
 A bot handling various tasks for the Discord server "Omnivoracious Listeners".
 
-Version 2.8:
+Version 2.9:
 
 Finished features:
 
@@ -17,6 +17,7 @@ Finished features:
 - Creators, friends and partners ads
 - Checking for double submissions
 - Checking whether the user has already submitted an album or not
+- Splitting newsletter albums by genre
 
 Currently working on:
 

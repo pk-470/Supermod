@@ -44,7 +44,7 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
     )
     async def news(self, ctx, date_str=None):
         if date_str == None:
-            date = pendulum.today("America/Toronto")
+            date = pendulum.now("America/Toronto")
         else:
             try:
                 date = pendulum.from_format(date_str, "M/D/YYYY")
@@ -77,10 +77,21 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
             )
             return
         else:
-            date = pendulum.today("America/Toronto")
+            date = pendulum.now("America/Toronto")
             sheet_data = news_sheet.sheet1.get_all_values()
             posts = newsletter_create(sheet_data, date, message)
             for post in posts:
+                await ctx.send(post)
+
+    @commands.command(
+        brief="Post the albums in this week's newsletter to the relevant genre channels.",
+        description="Post the albums in this week's newsletter to the relevant genre channels.",
+    )
+    async def news_by_genre(self, ctx):
+        sheet_data = news_sheet.sheet1.get_all_values()
+        genre_categories_posts = news_by_genre(sheet_data)
+        for genre_category in genre_categories_posts:
+            for post in genre_categories_posts[genre_category]:
                 await ctx.send(post)
 
 
@@ -95,6 +106,7 @@ def news_get(sheet_data, week):
             artist=release[0],
             title=release[1],
             genres=release[4],
+            genre_categories=release[13],
             release_date=release[2],
             countries=release[6],
             length=release[3],
@@ -106,15 +118,13 @@ def news_get(sheet_data, week):
     return albums
 
 
-def newsletter_create(sheet_data, date, message=None):
-    week = week_no(date)
-    albums = news_get(sheet_data, week)
+def split_by_length(albums):
+    # Organise albums by length in the newsletter.
+    # Returns a string with all the albums organised.
     album_lengths = []
-    [
-        album_lengths.append(album.length)
-        for album in albums
-        if album.length not in album_lengths
-    ]
+    for album in albums:
+        if album.length not in album_lengths:
+            album_lengths.append(album.length)
     album_lengths.sort()
     if "EP" in album_lengths:
         album_lengths.insert(0, album_lengths.pop(album_lengths.index("EP")))
@@ -133,7 +143,12 @@ def newsletter_create(sheet_data, date, message=None):
             )
         )
 
-    title_day = end_of_week(date, week)
+    return "\n\n".join(albums_by_length)
+
+
+def newsletter_create(sheet_data, date, message=None):
+    title_day, week = end_of_week(date)
+    albums = news_get(sheet_data, week)
     if message == None:
         post_full = (
             "**__Omnivoracious Listeners New Music Newsletter (Week of "
@@ -141,7 +156,7 @@ def newsletter_create(sheet_data, date, message=None):
             + " "
             + day_trim(title_day.strftime("%d"))
             + f"{ordinal(title_day.day)}):__**\n\n"
-            + "\n\n".join(albums_by_length)
+            + split_by_length(albums)
         )
     else:
         post_full = (
@@ -150,7 +165,7 @@ def newsletter_create(sheet_data, date, message=None):
             + " "
             + day_trim(title_day.strftime("%d"))
             + f"{ordinal(title_day.day)}):__**\n\n"
-            + "\n\n".join(albums_by_length)
+            + split_by_length(albums)
             + f"\n\n{message}\n<"
             + getenv("NEWS_SHEET_URL")
             + ">\n\nFeel free to contribute to our ever-growing newsletter:\n<"
@@ -161,8 +176,37 @@ def newsletter_create(sheet_data, date, message=None):
     return post_split(post_full, 2000)
 
 
-# Split long posts
+def news_by_genre(sheet_data):
+    # Organise albums by genre to be posted in the relevant genre category channels.
+    # Returns a dictionary in the form {genre category : albums organised by length}.
+    date = pendulum.now("America/Toronto")
+    title_day, week = end_of_week(date)
+    albums = news_get(sheet_data, week)
+    album_genre_categories = []
+    for album in albums:
+        for genre_category in album.genre_categories:
+            if genre_category not in album_genre_categories:
+                album_genre_categories.append(genre_category)
+    genre_categories_posts = {}
+    for genre_category in album_genre_categories:
+        albums_of_genre = [
+            album for album in albums if genre_category in album.genre_categories
+        ]
+        genre_categories_posts[genre_category] = post_split(
+            "**__Stuff you might be into this week ("
+            + title_day.strftime("%B")
+            + " "
+            + day_trim(title_day.strftime("%d"))
+            + f"{ordinal(title_day.day)}) ({genre_category}):__**\n\n"
+            + split_by_length(albums_of_genre),
+            2000,
+        )
+
+    return genre_categories_posts
+
+
 def post_split(long_post, length):
+    # Splits long posts.
     posts = [long_post]
     while len(long_post) > length:
         i = 1
@@ -187,9 +231,10 @@ def week_no(date):
     return (date - date.start_of("year")).days // 7 + 1
 
 
-def end_of_week(date, week):
+def end_of_week(date):
+    week = week_no(date)
     days = 7 * week - 1
-    return date.start_of("year").add(days=days)
+    return date.start_of("year").add(days=days), week
 
 
 def week_check(value, week):
@@ -215,7 +260,7 @@ def ordinal(num):
 
 
 def plural(string):
-    if string[-1] in ["s", "sh", "ch", "x", "z"]:
+    if string[-1] in ("s", "x", "z") or string[-2:] in ("sh", "ch"):
         return f"{string}es"
     else:
         return f"{string}s"
