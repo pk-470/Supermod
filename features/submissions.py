@@ -17,6 +17,7 @@ from os import getenv
 from asyncio.exceptions import TimeoutError
 import pendulum
 from time import sleep
+from random import shuffle
 
 # Import data according to local_mode status
 local_mode = open("mode_switch.txt", "r").read()
@@ -63,20 +64,15 @@ class Album_Submissions(
 ):
     def __init__(self, bot):
         self.bot = bot
+        self.sheet_updating_status = False
         self.subs_sheet_update.start()
 
     @tasks.loop(hours=12)
     async def subs_sheet_update(self):
+        self.sheet_updating_status = True
         for masterlist in masterlist_channel_dict:
             await update_subs_sheet(self.bot, None, masterlist)
-
-    @commands.command()
-    async def sheet_update(self, ctx, masterlist=None):
-        if masterlist is None:
-            for masterlist in masterlist_channel_dict:
-                await update_subs_sheet(self.bot, ctx, masterlist)
-        else:
-            await update_subs_sheet(self.bot, ctx, masterlist)
+        self.sheet_updating_status = False
 
     @commands.command(
         brief="Manually add a submission to a masterlist (for staff use only)",
@@ -96,30 +92,6 @@ class Album_Submissions(
             await ctx.send("Time has run out.")
         except:
             await ctx.send("Something went wrong. Please try again.")
-
-    @commands.command(
-        brief="Pass all submissions from a sheet to its corresponding masterlist.",
-        description="Pass all submissions from a sheet to its corresponding masterlist. "
-        "Optional argument: masterlist name masterlist name (i.e. one of 'voted', 'new', 'modern', "
-        "'classic', 'theme'). If no masterlist is specified, the bot will update all masterlists.",
-    )
-    async def update_masterlist(self, ctx, masterlist=None):
-        if masterlist is None:
-            for masterlist in masterlist_channel_dict:
-                await sheet_to_masterlist(self.bot, masterlist)
-                await ctx.send(
-                    f"{masterlist.upper()} masterlist has been updated from the sheet data."
-                )
-        elif masterlist.lower() in masterlist_channel_dict:
-            await sheet_to_masterlist(self.bot, masterlist.lower())
-            await ctx.send(
-                f"{masterlist.upper()} masterlist has been updated from the sheet data."
-            )
-        else:
-            ctx.send(
-                "Please provide a valid masterlist name, or no name if you wish to update "
-                "all masterlists from the sheet data."
-            )
 
     @commands.command(
         brief="Fetch and approve or reject submissions for the masterlists.",
@@ -263,6 +235,51 @@ class Album_Submissions(
             await ctx.send("Time has run out.")
         except:
             await ctx.send("Something went wrong. Please try again.")
+
+    @commands.command(
+        brief="Pass all submissions from a masterlist to its corresponding google sheet.",
+        description="Pass all submissions from a masterlist to its corresponding google sheet. "
+        "Optional argument: masterlist name (i.e. one of 'voted', 'new', 'modern', 'classic', 'theme'). "
+        "If no masterlist is specified, the bot will update all sheets.",
+    )
+    async def update_sheet(self, ctx, masterlist=None):
+        if masterlist is None:
+            for masterlist in masterlist_channel_dict:
+                await update_subs_sheet(self.bot, ctx, masterlist)
+        elif masterlist.lower() in masterlist_channel_dict:
+            await update_subs_sheet(self.bot, ctx, masterlist)
+        else:
+            ctx.send(
+                "Please provide a valid masterlist name, or no name if you wish to update "
+                "all masterlists from the sheet data."
+            )
+
+    @commands.command(
+        brief="Pass all submissions from a sheet to its corresponding masterlist in a random order.",
+        description="Pass all submissions from a sheet to its corresponding masterlist in a random order. "
+        "Optional argument: masterlist name (i.e. one of 'voted', 'new', 'modern', 'classic', 'theme'). "
+        "If no masterlist is specified, the bot will update all masterlists.",
+    )
+    async def update_masterlist(self, ctx, masterlist=None):
+        if not self.sheet_updating_status:
+            if masterlist is None:
+                for masterlist in masterlist_channel_dict:
+                    await sheet_to_masterlist(self.bot, masterlist)
+                    await ctx.send(
+                        f"{masterlist.upper()} masterlist has been updated from the sheet data."
+                    )
+            elif masterlist.lower() in masterlist_channel_dict:
+                await sheet_to_masterlist(self.bot, masterlist.lower())
+                await ctx.send(
+                    f"{masterlist.upper()} masterlist has been updated from the sheet data."
+                )
+            else:
+                ctx.send(
+                    "Please provide a valid masterlist name, or no name if you wish to update "
+                    "all masterlists from the sheet data."
+                )
+        else:
+            await ctx.send("Submission sheets are currently updating. Try again later.")
 
 
 def msgs_by_index(response, subs_dict):
@@ -611,8 +628,11 @@ async def update_subs_sheet(bot, ctx, masterlist):
 
 async def sheet_to_masterlist(bot, masterlist):
     # Pass all submissions from a sheet to its corresponding masterlist.
+    channel = bot.get_channel(masterlist_channel_dict[masterlist])
+    await channel.purge(limit=100)
     subs_wks = subs_sheet.worksheet(masterlist.upper())
     albums = subs_wks.get_all_values()[1:]
+    shuffle(albums)
     for album in albums:
         sub = Submission(
             artist=album[1],
@@ -625,9 +645,7 @@ async def sheet_to_masterlist(bot, masterlist):
             message=None,
         )
 
-        await bot.get_channel(masterlist_channel_dict[masterlist]).send(
-            sub.masterlist_format()
-        )
+        await channel.send(sub.masterlist_format())
 
 
 # ------------------------------------------------SHEET-DATA-TO-MASTERLIST-END-------------------------------------------------

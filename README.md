@@ -2,7 +2,7 @@
 
 A bot handling various tasks for the Discord server "Omnivoracious Listeners".
 
-Version 3.0:
+Version 3.1:
 
 Finished features:
 
@@ -20,6 +20,8 @@ Finished features:
 - Splitting newsletter albums by genre
 - Halting submissions for later consideration
 - Removing old submission whenever the user indicates for it to be replaced
+- Updating sheet data from masterlists (command + 12 hour loop)
+- Updating masterlists from sheet data in a random order
 
 Currently working on:
 
