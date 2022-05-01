@@ -17,6 +17,7 @@ class Submission(Album):
         masterlist,
         message,
         request=None,
+        warning=None,
     ):
         Album.__init__(
             self,
@@ -49,6 +50,7 @@ class Submission(Album):
             self.masterlist = "wrong/missing"
         self.message = message
         self.request = request
+        self.warning = warning
         self.link = "https://www.google.com/search?q=" + url.quote_plus(
             f"{self.artist} {self.title}"
         )

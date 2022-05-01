@@ -18,8 +18,8 @@ class Album:
         length=None,
         ffo=None,
     ):
-        self.artist = remove_spaces(artist)
-        self.title = remove_spaces(title)
+        self.artist = make_title(artist)
+        self.title = make_title(title)
         self.genres = handle_genres(genres)
         self.genre_categories = handle_genre_categories(genre_categories)
         self.length = handle_length(length)
@@ -58,22 +58,24 @@ def remove_spaces(string):
         while string[end - 1] in (" ", "\n"):
             end = end - 1
 
-        string = string[start:end]
-        if string.upper() == string:
-            return string
-        else:
-            return titlecase(string)
+        return string[start:end]
     else:
         return ""
+
+
+def make_title(string):
+    string = remove_spaces(string)
+    if string.upper() == string:
+        return string
+    else:
+        return titlecase(string)
 
 
 def handle_input(strings):
     if strings is None:
         return None
     else:
-        return [
-            remove_spaces(string) for string in strings.replace("/", ", ").split(", ")
-        ]
+        return [make_title(string) for string in strings.replace("/", ", ").split(", ")]
 
 
 def handle_genres(genres):
