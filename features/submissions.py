@@ -17,7 +17,7 @@ from os import getenv
 from asyncio.exceptions import TimeoutError
 import pendulum
 from time import sleep
-from random import shuffle
+from random import shuffle, choice
 
 # Import data according to local_mode status
 local_mode = open("mode_switch.txt", "r").read()
@@ -64,28 +64,37 @@ class Album_Submissions(
 ):
     def __init__(self, bot):
         self.bot = bot
-        self.sheet_updating_status = False
+        self.sheet_updating = False
         self.subs_sheet_update.start()
 
     @tasks.loop(hours=12)
     async def subs_sheet_update(self):
-        self.sheet_updating_status = True
+        self.sheet_updating = True
         for masterlist in masterlist_channel_dict:
             await update_subs_sheet(self.bot, None, masterlist)
-        self.sheet_updating_status = False
+        self.sheet_updating = False
 
     @commands.command(
-        brief="Manually add a submission to a masterlist (for staff use only)",
-        description="Manually add a submission to a masterlist (for staff use only)",
+        brief="Manually add a submission to a masterlist (for staff use only).",
+        description="Manually add a submission to a masterlist (for staff use only). Use "
+        "the usual submission format (i.e. Title // Artist // Year // Genre // Masterlist).",
     )
     async def submit(self, ctx):
-        await ctx.send("You have 5 minutes to respond with your submission.")
+        await ctx.send(
+            "You have 5 minutes to respond with your submission, "
+            "or with 'stop' to stop the submission process."
+        )
 
         def check(resp):
             return resp.author == ctx.author and resp.channel == ctx.channel
 
         try:
             response = await self.bot.wait_for("message", timeout=300.0, check=check)
+
+            if response.content.lower().startswith("stop"):
+                await ctx.send("The submission process has stopped.")
+                return
+
             sub = submission_make(response)
             await submit_album(self.bot, sub)
         except TimeoutError:
@@ -237,6 +246,59 @@ class Album_Submissions(
             await ctx.send("Something went wrong. Please try again.")
 
     @commands.command(
+        brief="Choose a random album from a masterlist.",
+        description="Choose a random album from a masterlist. Optional argument: "
+        "masterlist name (i.e. one of 'voted', 'new', 'modern', 'classic', 'theme'). "
+        "If no masterlist is specified, the bot will get a random album from every "
+        "masterlist except 'voted'.",
+    )
+    async def get_random(self, ctx, masterlist=None):
+        if self.sheet_updating:
+            await ctx.send("Submission sheets are currently updating. Try again later.")
+            return
+
+        if masterlist is None:
+            for masterlist in list(masterlist_channel_dict)[1:]:
+                album = choice(
+                    subs_sheet.worksheet(masterlist.upper()).get_all_values()[1:]
+                )
+                sub = Submission(
+                    artist=album[1],
+                    title=album[0],
+                    genres=album[2],
+                    release_date=album[3],
+                    submitter_name=album[4],
+                    submitter_id=album[5],
+                    masterlist=masterlist,
+                    message=None,
+                )
+
+                await ctx.send(
+                    masterlist.upper() + " choice: " + sub.masterlist_format()
+                )
+        elif masterlist.lower() in masterlist_channel_dict:
+            album = choice(
+                subs_sheet.worksheet(masterlist.upper()).get_all_values()[1:]
+            )
+            sub = Submission(
+                artist=album[1],
+                title=album[0],
+                genres=album[2],
+                release_date=album[3],
+                submitter_name=album[4],
+                submitter_id=album[5],
+                masterlist=masterlist,
+                message=None,
+            )
+
+            await ctx.send(masterlist.upper() + " choice: " + sub.masterlist_format())
+        else:
+            ctx.send(
+                "Please provide a valid masterlist name, or no name if you wish"
+                "to get a random album from every masterlist (except 'voted')."
+            )
+
+    @commands.command(
         brief="Pass all submissions from a masterlist to its corresponding google sheet.",
         description="Pass all submissions from a masterlist to its corresponding google sheet. "
         "Optional argument: masterlist name (i.e. one of 'voted', 'new', 'modern', 'classic', 'theme'). "
@@ -261,25 +323,26 @@ class Album_Submissions(
         "If no masterlist is specified, the bot will update all masterlists.",
     )
     async def update_masterlist(self, ctx, masterlist=None):
-        if not self.sheet_updating_status:
-            if masterlist is None:
-                for masterlist in masterlist_channel_dict:
-                    await sheet_to_masterlist(self.bot, masterlist)
-                    await ctx.send(
-                        f"{masterlist.upper()} masterlist has been updated from the sheet data."
-                    )
-            elif masterlist.lower() in masterlist_channel_dict:
-                await sheet_to_masterlist(self.bot, masterlist.lower())
+        if self.sheet_updating:
+            await ctx.send("Submission sheets are currently updating. Try again later.")
+            return
+
+        if masterlist is None:
+            for masterlist in masterlist_channel_dict:
+                await sheet_to_masterlist(self.bot, masterlist)
                 await ctx.send(
                     f"{masterlist.upper()} masterlist has been updated from the sheet data."
                 )
-            else:
-                ctx.send(
-                    "Please provide a valid masterlist name, or no name if you wish to update "
-                    "all masterlists from the sheet data."
-                )
+        elif masterlist.lower() in masterlist_channel_dict:
+            await sheet_to_masterlist(self.bot, masterlist.lower())
+            await ctx.send(
+                f"{masterlist.upper()} masterlist has been updated from the sheet data."
+            )
         else:
-            await ctx.send("Submission sheets are currently updating. Try again later.")
+            ctx.send(
+                "Please provide a valid masterlist name, or no name if you wish to update "
+                "all masterlists from the sheet data."
+            )
 
 
 def msgs_by_index(response, subs_dict):

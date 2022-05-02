@@ -11,7 +11,7 @@ import pendulum
 bot = commands.Bot(command_prefix=",", case_insensitive=True)
 
 # ------------------------------------------------------MODE-SWITCH------------------------------------------------------
-# Choose the mode (ON to run the bot locally, OFF to upload and run on Heroku)
+# Choose the local mode (ON to run the bot locally, OFF to upload and run on Heroku).
 LOCAL_MODE = "OFF"
 # ----------------------------------------------------MODE-SWITCH-END----------------------------------------------------
 

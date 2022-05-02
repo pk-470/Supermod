@@ -84,8 +84,8 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
                 await ctx.send(post)
 
     @commands.command(
-        brief="Post the albums in this week's newsletter to the relevant genre channels.",
-        description="Post the albums in this week's newsletter to the relevant genre channels.",
+        brief="Split the albums in this week's newsletter by genre category.",
+        description="Split the albums in this week's newsletter by genre category.",
     )
     async def news_by_genre(self, ctx):
         sheet_data = news_sheet.sheet1.get_all_values()

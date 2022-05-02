@@ -2,7 +2,7 @@
 
 A bot handling various tasks for the Discord server "Omnivoracious Listeners".
 
-Version 3.1:
+Version 3.1.5:
 
 Finished features:
 
@@ -22,6 +22,7 @@ Finished features:
 - Removing old submission whenever the user indicates for it to be replaced
 - Updating sheet data from masterlists (command + 12 hour loop)
 - Updating masterlists from sheet data in a random order
+- Choose a random album from each masterlist
 
 Currently working on:
 
