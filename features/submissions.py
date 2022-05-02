@@ -404,7 +404,9 @@ def duplicate_check(sub: Submission, existing_subs_dict):
         row = existing_subs_dict[sub.masterlist].index((sub.artist, sub.title))
         return (
             True,
-            subs_sheet.worksheet(sub.masterlist.upper()).acell(f"G{row + 2}").value,
+            int(
+                subs_sheet.worksheet(sub.masterlist.upper()).acell(f"G{row + 2}").value
+            ),
         )
     except:
         return False, 0
@@ -416,7 +418,9 @@ def user_already_in_masterlist_check(sub: Submission, submitters_dict):
         row = submitters_dict[sub.masterlist].index(sub.submitter_id)
         return (
             True,
-            subs_sheet.worksheet(sub.masterlist.upper()).acell(f"G{row + 2}").value,
+            int(
+                subs_sheet.worksheet(sub.masterlist.upper()).acell(f"G{row + 2}").value
+            ),
         )
     except:
         return False, 0
