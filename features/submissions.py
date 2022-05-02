@@ -118,6 +118,10 @@ class Album_Submissions(
     )
     async def subs(self, ctx, masterlist=None):
         # Check if an appropriate masterlist is chosen, otherwise prompt for one.
+        if self.sheet_updating:
+            await ctx.send("Submission sheets are currently updating. Try again later.")
+            return
+
         if masterlist is None:
             subs_dict = await subs_check_msg(self.bot, ctx, masterlist=None)
         elif masterlist.lower() in (
@@ -178,12 +182,6 @@ class Album_Submissions(
 
             # Approve submissions
             elif response.content.lower().startswith("ok"):
-                if self.sheet_updating:
-                    await ctx.send(
-                        "Submission sheets are currently updating. Try again later."
-                    )
-                    return
-
                 if masterlist == "error":
                     await ctx.send(
                         "I can't add submissions with errors to the masterlist."
