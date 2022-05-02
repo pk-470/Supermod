@@ -678,7 +678,7 @@ async def update_subs_sheet(bot, ctx, masterlist):
             print(problem_sub)
 
     if ctx is not None:
-        await ctx.send(f"{masterlist.upper()} sheet updated.)\n")
+        await ctx.send(f"{masterlist.upper()} sheet updated.")
         await ctx.send(f"Problem subs in {masterlist.upper()}:")
         await ctx.send("\n".join(problem_subs))
 
