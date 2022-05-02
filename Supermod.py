@@ -39,7 +39,7 @@ async def on_ready():
         bot.load_extension(f"features.{feature}")
         print(
             f"Feature {feature} has been loaded ("
-            + pendulum.now().strftime("%Y-%m-%d, %H:%M:%S")
+            + pendulum.now("America/Toronto").strftime("%Y-%m-%d, %H:%M:%S EST")
             + ")."
         )
 
