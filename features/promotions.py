@@ -144,7 +144,7 @@ class Promotions(
         time_now = pendulum.now("America/Toronto")
         print(
             "Promotions loop is working ("
-            + time_now.strftime("%Y-%m-%d, %H:%M:%S")
+            + time_now.strftime("%Y-%m-%d, %H:%M:%S EST")
             + ")."
         )
         promos = promos_wks.get_all_values()[1:]
