@@ -668,7 +668,7 @@ async def update_subs_sheet(bot, ctx, masterlist):
             problem_subs.append(msg.jump_url)
 
     print(
-        f"{masterlist.upper()} sheet updated. ("
+        f"{masterlist.upper()} sheet updated ("
         + pendulum.now("America/Toronto").strftime("%Y-%m-%d, %H:%M:%S EST")
         + ")."
     )
