@@ -80,6 +80,10 @@ class Album_Submissions(
         "the usual submission format (i.e. Title // Artist // Year // Genre // Masterlist).",
     )
     async def submit(self, ctx):
+        if self.sheet_updating:
+            await ctx.send("Submission sheets are currently updating. Try again later.")
+            return
+
         await ctx.send(
             "You have 5 minutes to respond with your submission, "
             "or with 'stop' to stop the submission process."
@@ -174,6 +178,12 @@ class Album_Submissions(
 
             # Approve submissions
             elif response.content.lower().startswith("ok"):
+                if self.sheet_updating:
+                    await ctx.send(
+                        "Submission sheets are currently updating. Try again later."
+                    )
+                    return
+
                 if masterlist == "error":
                     await ctx.send(
                         "I can't add submissions with errors to the masterlist."
