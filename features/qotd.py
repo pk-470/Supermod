@@ -62,7 +62,7 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
         try:
             await ctx.send("Respond with 'stop' at any point to stop the process.")
             await ctx.send("QOTD type (Question / Activity):")
-            response = await self.bot.wait_for("message", timeout=30.0, check=check)
+            response = await self.bot.wait_for("message", timeout=30, check=check)
             if response.content.lower() == "stop":
                 await ctx.send("The QOTD submission process has stopped.")
                 return
@@ -77,7 +77,7 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
                 )
                 return
             await ctx.send("Repeatable (Yes / No):")
-            response = await self.bot.wait_for("message", timeout=30.0, check=check)
+            response = await self.bot.wait_for("message", timeout=30, check=check)
             if response.content.lower() == "stop":
                 await ctx.send("The QOTD submission process has stopped.")
                 return
@@ -94,7 +94,7 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
                 )
                 return
             await ctx.send("QOTD content:")
-            response = await self.bot.wait_for("message", timeout=180.0, check=check)
+            response = await self.bot.wait_for("message", timeout=180, check=check)
             if response.content.lower() == "stop":
                 await ctx.send("The QOTD submission process has stopped.")
                 return
@@ -104,7 +104,7 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
                 f"The {qotd_type.lower()} '{qotd}' ({repeatable_long}) "
                 "will be added to the spreadsheet. Do you want to submit (y/n)?"
             )
-            response = await self.bot.wait_for("message", timeout=30.0, check=check)
+            response = await self.bot.wait_for("message", timeout=30, check=check)
             if response.content.lower()[0] == "y":
                 qotd_wks.append_row([qotd_type, repeatable, qotd])
                 await ctx.send("The QOTD was added to the spreadsheet.")
@@ -166,7 +166,7 @@ async def qotd_interact(bot, channel, timeout):
             def check(response):
                 return response.author == user
 
-            response = await bot.wait_for("message", timeout=600.0, check=check)
+            response = await bot.wait_for("message", timeout=600, check=check)
             if response.content.lower() == "stop":
                 await channel.send("The QOTD editing process has stopped.")
                 return
@@ -178,9 +178,7 @@ async def qotd_interact(bot, channel, timeout):
             def check(reaction, user):
                 return str(reaction.emoji) in ("✅", "❌") and user != bot.user
 
-            reaction, user = await bot.wait_for(
-                "reaction_add", timeout=60.0, check=check
-            )
+            reaction, user = await bot.wait_for("reaction_add", timeout=60, check=check)
             if str(reaction.emoji) == "✅":
                 await qotd_post(question, bot, channel, overwrite=response.content)
             elif str(reaction.emoji) == "❌":

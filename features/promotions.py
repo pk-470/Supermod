@@ -62,7 +62,7 @@ class Promotions(
         try:
             await ctx.send("Respond with 'stop' at any point to stop the process.")
             await ctx.send("Submitter Type (Creator / Partner):")
-            response = await self.bot.wait_for("message", timeout=30.0, check=check)
+            response = await self.bot.wait_for("message", timeout=30, check=check)
             if response.content.lower() == "stop":
                 await ctx.send("The promo submission process has stopped.")
                 return
@@ -78,13 +78,13 @@ class Promotions(
                 return
             new_promo.extend([response.content.capitalize(), embed])
             await ctx.send("Project Name:")
-            response = await self.bot.wait_for("message", timeout=30.0, check=check)
+            response = await self.bot.wait_for("message", timeout=30, check=check)
             if response.content.lower() == "stop":
                 await ctx.send("The promo submission process has stopped.")
                 return
             new_promo.append(response.content.capitalize())
             await ctx.send("Message (no mentions on top):")
-            response = await self.bot.wait_for("message", timeout=90.0, check=check)
+            response = await self.bot.wait_for("message", timeout=90, check=check)
             if response.content.lower() == "stop":
                 await ctx.send("The promo submission process has stopped.")
                 return
@@ -93,7 +93,7 @@ class Promotions(
                 "Date/Time (e.g. 11/4:00). Dates/Times which are already taken: "
                 + ", ".join(dates)
             )
-            response = await self.bot.wait_for("message", timeout=90.0, check=check)
+            response = await self.bot.wait_for("message", timeout=90, check=check)
             if response.content.lower() == "stop":
                 await ctx.send("The promo submission process has stopped.")
                 return
@@ -102,7 +102,7 @@ class Promotions(
             await ctx.send(
                 "Member ID(s) (in the format 'number_1 number_2' etc. without any commas or <@!, >):"
             )
-            response = await self.bot.wait_for("message", timeout=90.0, check=check)
+            response = await self.bot.wait_for("message", timeout=90, check=check)
             if response.content.lower() == "stop":
                 await ctx.send("The promo submission process has stopped.")
                 return
@@ -121,7 +121,7 @@ class Promotions(
                 await ctx.send(new_promo_msg)
 
             await ctx.send("Do you want to submit (y/n)?")
-            confirm = await self.bot.wait_for("message", timeout=30.0, check=check)
+            confirm = await self.bot.wait_for("message", timeout=30, check=check)
             if confirm.content.lower().startswith("y"):
                 promos_wks.append_row(new_promo)
                 await ctx.send("The promo was submitted.")

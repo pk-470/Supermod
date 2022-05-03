@@ -93,7 +93,7 @@ class Album_Submissions(
             return resp.author == ctx.author and resp.channel == ctx.channel
 
         try:
-            response = await self.bot.wait_for("message", timeout=300.0, check=check)
+            response = await self.bot.wait_for("message", timeout=300, check=check)
 
             if response.content.lower().startswith("stop"):
                 await ctx.send("The submission process has stopped.")
@@ -174,7 +174,7 @@ class Album_Submissions(
             return resp.author == ctx.author and resp.channel == ctx.channel
 
         try:
-            response = await self.bot.wait_for("message", timeout=1800.0, check=check)
+            response = await self.bot.wait_for("message", timeout=1800, check=check)
 
             if response.content.lower().startswith("stop"):
                 await ctx.send("The submissions approval process has stopped.")
