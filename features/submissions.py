@@ -231,7 +231,9 @@ class Album_Submissions(
                     )
 
             # Unhalt halted submissions.
-            elif response.content.startswith("unhalt") and masterlist == "halted":
+            elif (
+                response.content.lower().startswith("unhalt") and masterlist == "halted"
+            ):
                 unhalt_sub_indices, unhalt_sub_msgs = msgs_by_index(response, subs_dict)
                 for msg in unhalt_sub_msgs:
                     await msg.clear_reaction("🇭")
