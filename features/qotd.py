@@ -34,7 +34,7 @@ qotd_channel = int(getenv("QOTD_CHANNEL"))
 qotd_approval_channel = int(getenv("QOTD_APPROVAL_CHANNEL"))
 
 qotd_hour = 6
-qotd_minute = 46
+qotd_minute = 0
 
 
 class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
