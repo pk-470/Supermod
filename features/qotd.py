@@ -34,7 +34,7 @@ qotd_channel = int(getenv("QOTD_CHANNEL"))
 qotd_approval_channel = int(getenv("QOTD_APPROVAL_CHANNEL"))
 
 qotd_hour = 6
-qotd_minute = 0
+qotd_minute = 46
 
 
 class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
@@ -133,7 +133,7 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
         )
         if time_now.hour == qotd_hour and time_now.minute == qotd_minute:
             await qotd_interact(
-                self.bot, self.bot.get_channel(qotd_approval_channel), timeout=3600
+                self.bot, self.bot.get_channel(qotd_approval_channel), timeout=1800
             )
 
 
@@ -225,7 +225,7 @@ async def qotd_post(question, bot, ctx, overwrite=None):
             f"\n\n{overwrite}"
         )
     mark_as_used(question)
-    conf_msg = f"QOTD has been posted (date: {date_str})."
+    conf_msg = f"QOTD has been posted ({date_str})."
     await ctx.send(conf_msg)
     print(conf_msg)
 
