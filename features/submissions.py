@@ -219,7 +219,7 @@ class Album_Submissions(
                     )
 
             # Halt submissions for later consideration.
-            elif response.content.startswith("halt") and masterlist != "halted":
+            elif response.content.lower().startswith("halt") and masterlist != "halted":
                 halt_sub_indices, halt_sub_msgs = msgs_by_index(response, subs_dict)
                 for msg in halt_sub_msgs:
                     await msg.add_reaction("🇭")
