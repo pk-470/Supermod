@@ -1,5 +1,5 @@
-# Parent album class
-from classes.album_class import Album, remove_spaces
+# Parent Album class
+from classes.album_class import *
 
 # Library to create urls
 import urllib.parse as url

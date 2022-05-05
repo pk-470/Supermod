@@ -1,8 +1,7 @@
 # Titlecase
 from titlecase import titlecase
 
-# Flag emoji archive
-from data.discord_country_flags import discord_country_flags
+# Genre data
 from data.genres import *
 
 
@@ -26,24 +25,6 @@ class Album:
         self.release_date = remove_spaces(release_date)
         self.countries = handle_input(countries)
         self.ffo = handle_input(ffo)
-
-    def news_format(self):
-        try:
-            return (
-                "  ".join(
-                    [discord_country_flags[country] for country in self.countries]
-                )
-                + f"  | {self.artist} - '{self.title}' (Genre: "
-                + ", ".join(self.genres)
-                + ")"
-            )
-        except:
-            print(
-                f"Something went wrong with album {self.title} by {self.artist} "
-                f"from {self.countries} (Genre: {self.genres}, "
-                f"Release date: {self.release_date})."
-            )
-            return ""
 
 
 def remove_spaces(string):

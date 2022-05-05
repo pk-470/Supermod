@@ -71,7 +71,9 @@ class Album_Submissions(
     async def subs_sheet_update(self):
         self.sheet_updating = True
         for masterlist in masterlist_channel_dict:
-            await update_subs_sheet(self.bot, None, masterlist)
+            await update_subs_sheet(
+                self.bot, self.bot.get_channel(approval_channel), masterlist
+            )
         self.sheet_updating = False
 
     @commands.command(
@@ -315,11 +317,15 @@ class Album_Submissions(
         "If no masterlist is specified, the bot will update all sheets.",
     )
     async def update_sheet(self, ctx, masterlist=None):
+        if self.sheet_updating:
+            await ctx.send("Submission sheets are currently updating. Try again later.")
+            return
+
         if masterlist is None:
             for masterlist in masterlist_channel_dict:
                 await update_subs_sheet(self.bot, ctx, masterlist)
         elif masterlist.lower() in masterlist_channel_dict:
-            await update_subs_sheet(self.bot, ctx, masterlist)
+            await update_subs_sheet(self.bot, ctx, masterlist.lower())
         else:
             ctx.send(
                 "Please provide a valid masterlist name, or no name if you wish to update "
@@ -649,6 +655,7 @@ async def masterlist_sub_make(bot, post, masterlist):
 
 
 async def update_subs_sheet(bot, ctx, masterlist):
+    await ctx.send(f"Updating {masterlist.upper()} sheet.")
     subs_wks = subs_sheet.worksheet(masterlist.upper())
     subs_wks.clear()
     problem_subs = []
@@ -686,13 +693,9 @@ async def update_subs_sheet(bot, ctx, masterlist):
         + pendulum.now("America/Toronto").strftime("%Y-%m-%d, %H:%M:%S EST")
         + ")."
     )
-    if problem_subs:
-        print(f"Problem subs in {masterlist.upper()}:")
-        for problem_sub in problem_subs:
-            print(problem_sub)
+    await ctx.send(f"{masterlist.upper()} sheet updated.")
 
-    if ctx is not None:
-        await ctx.send(f"{masterlist.upper()} sheet updated.")
+    if problem_subs:
         await ctx.send(f"Problem subs in {masterlist.upper()}:")
         await ctx.send("\n".join(problem_subs))
 

@@ -1,8 +1,8 @@
 # Library for Discord
 from discord.ext import commands
 
-# Album class
-from classes.album_class import Album
+# Release class
+from classes.release_class import Release
 
 # Library for date manipulation
 import pendulum
@@ -61,9 +61,7 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
 
         sheet = f"{date.year} OL Rock Albums List"
         sheet_data = news_sheet.worksheet(sheet).get_all_values()
-        posts = newsletter_create(sheet_data, date)
-        for post in posts:
-            await ctx.send(post)
+        await newsletter_post(ctx, sheet_data, date)
 
     @commands.command(
         brief="Add a message to this week's official newsletter.",
@@ -79,9 +77,7 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
         else:
             date = pendulum.now("America/Toronto")
             sheet_data = news_sheet.sheet1.get_all_values()
-            posts = newsletter_create(sheet_data, date, message)
-            for post in posts:
-                await ctx.send(post)
+            await newsletter_post(ctx, sheet_data, date, message)
 
     @commands.command(
         brief="Split the albums in this week's newsletter by genre category.",
@@ -89,10 +85,13 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
     )
     async def news_by_genre(self, ctx):
         sheet_data = news_sheet.sheet1.get_all_values()
-        genre_categories_posts = news_by_genre(sheet_data)
+        genre_categories_posts, errors_message = news_by_genre(sheet_data)
         for genre_category in genre_categories_posts:
-            for post in genre_categories_posts[genre_category]:
+            posts = post_split(genre_categories_posts[genre_category], 2000)
+            for post in posts:
                 await ctx.send(post)
+        if errors_message:
+            await ctx.send(errors_message)
 
 
 def news_get(sheet_data, week):
@@ -102,7 +101,7 @@ def news_get(sheet_data, week):
         if release[0] and release[0] != "..." and week_check(release[2], week)
     ]
     albums = [
-        Album(
+        Release(
             artist=release[0],
             title=release[1],
             genres=release[4],
@@ -119,36 +118,39 @@ def news_get(sheet_data, week):
 
 
 def split_by_length(albums):
-    # Organise albums by length in the newsletter.
-    # Returns a string with all the albums organised.
-    album_lengths = []
+    # Organise albums by length in the newsletter. Returns a string with
+    # with all the albums organised and a list with possible errors.
+    albums_by_length = {"LP": [], "EP": []}
+    errors = []
     for album in albums:
-        if album.length not in album_lengths:
-            album_lengths.append(album.length)
-    album_lengths.sort()
-    if "EP" in album_lengths:
-        album_lengths.insert(0, album_lengths.pop(album_lengths.index("EP")))
-    if "LP" in album_lengths:
-        album_lengths.insert(0, album_lengths.pop(album_lengths.index("LP")))
-    albums_by_length = []
-    for length in album_lengths:
-        albums_by_length.append(
+        if not album.news_format().startswith("**ERROR:**"):
+            if album.length in albums_by_length:
+                albums_by_length[album.length].append(album.news_format())
+            else:
+                albums_by_length[album.length] = [album.news_format()]
+        else:
+            errors.append(album.news_format())
+    if not albums_by_length["LP"]:
+        albums_by_length.pop("LP")
+    if not albums_by_length["EP"]:
+        albums_by_length.pop("EP")
+    news_message = "\n\n".join(
+        [
             f"__*New {plural(length)}:*__\n"
             + "\n".join(
-                [
-                    album.news_format()
-                    for album in albums
-                    if album.length == length and album.news_format()
-                ]
+                [formatted_album for formatted_album in albums_by_length[length]]
             )
-        )
+            for length in albums_by_length
+        ]
+    )
 
-    return "\n\n".join(albums_by_length)
+    return news_message, errors
 
 
-def newsletter_create(sheet_data, date, message=None):
+async def newsletter_post(channel, sheet_data, date, message=None):
     title_day, week = end_of_week(date)
     albums = news_get(sheet_data, week)
+    news_message, errors = split_by_length(albums)
     if message == None:
         post_full = (
             "**__Omnivoracious Listeners New Music Newsletter (Week of "
@@ -156,7 +158,7 @@ def newsletter_create(sheet_data, date, message=None):
             + " "
             + day_trim(title_day.strftime("%d"))
             + f"{ordinal(title_day.day)}):__**\n\n"
-            + split_by_length(albums)
+            + news_message
         )
     else:
         post_full = (
@@ -165,7 +167,7 @@ def newsletter_create(sheet_data, date, message=None):
             + " "
             + day_trim(title_day.strftime("%d"))
             + f"{ordinal(title_day.day)}):__**\n\n"
-            + split_by_length(albums)
+            + news_message
             + f"\n\n{message}\n<"
             + getenv("NEWS_SHEET_URL")
             + ">\n\nFeel free to contribute to our ever-growing newsletter:\n<"
@@ -173,36 +175,53 @@ def newsletter_create(sheet_data, date, message=None):
             + ">\n\nHappy Listening!"
         )
 
-    return post_split(post_full, 2000)
+    if errors:
+        errors_message = "\n".join(errors)
+    else:
+        errors_message = ""
+
+    posts = post_split(post_full, 2000)
+    for post in posts:
+        await channel.send(post)
+    if errors_message:
+        await channel.send(errors_message)
 
 
 def news_by_genre(sheet_data):
     # Organise albums by genre to be posted in the relevant genre category channels.
-    # Returns a dictionary in the form {genre category : albums organised by length}.
+    # Returns a dictionary in the form {genre category : albums organised by length}
+    # and a string containing all errors.
     date = pendulum.now("America/Toronto")
     title_day, week = end_of_week(date)
     albums = news_get(sheet_data, week)
-    album_genre_categories = []
+    albums_by_genre_category = {}
     for album in albums:
         for genre_category in album.genre_categories:
-            if genre_category not in album_genre_categories:
-                album_genre_categories.append(genre_category)
+            if genre_category in albums_by_genre_category:
+                albums_by_genre_category[genre_category].append(album)
+            else:
+                albums_by_genre_category[genre_category] = [album]
+
     genre_categories_posts = {}
-    for genre_category in album_genre_categories:
-        albums_of_genre = [
-            album for album in albums if genre_category in album.genre_categories
-        ]
-        genre_categories_posts[genre_category] = post_split(
+    all_errors = []
+    for genre_category in albums_by_genre_category:
+        news_message, errors = split_by_length(albums_by_genre_category[genre_category])
+        genre_categories_posts[genre_category] = (
             "**__Stuff you might be into this week ("
             + title_day.strftime("%B")
             + " "
             + day_trim(title_day.strftime("%d"))
             + f"{ordinal(title_day.day)}) ({genre_category}):__**\n\n"
-            + split_by_length(albums_of_genre),
-            2000,
+            + news_message
         )
+        all_errors.extend([error for error in errors if error not in all_errors])
 
-    return genre_categories_posts
+    if all_errors:
+        errors_message = "\n".join([all_errors])
+    else:
+        errors_message = ""
+
+    return genre_categories_posts, errors_message
 
 
 def post_split(long_post, length):
