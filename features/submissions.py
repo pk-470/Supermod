@@ -188,6 +188,14 @@ class Album_Submissions(
                     await ctx.send(
                         "I can't add submissions with errors to the masterlist."
                     )
+                elif masterlist == "halted":
+                    for _, sub in list(subs_dict.items()):
+                        if type(sub).__name__ != "Sub_error" and sub.warning is None:
+                            await sub.message.clear_reaction("🇭")
+                            await submit_album(self.bot, sub)
+                    await ctx.send(
+                        "All new submissions without errors or warnings were added to the masterlists."
+                    )
                 elif masterlist is None:
                     for _, sub in list(subs_dict.items()):
                         if type(sub).__name__ != "Sub_error" and sub.warning is None:
