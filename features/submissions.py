@@ -698,6 +698,7 @@ async def masterlist_sub_make(bot, post, masterlist):
 
 
 async def update_subs_sheet(bot, ctx, masterlist):
+    # Pass all submissions from a masterlist to its corresponding sheet.
     await ctx.send(f"Updating {masterlist.upper()} sheet.")
     subs_wks = subs_sheet.worksheet(masterlist.upper())
     subs_wks.clear()
@@ -751,6 +752,7 @@ async def update_subs_sheet(bot, ctx, masterlist):
 
 async def sheet_to_masterlist(bot, ctx, masterlist):
     # Pass all submissions from a sheet to its corresponding masterlist.
+    await ctx.send(f"Updating {masterlist.upper()} masterlist.")
     channel = bot.get_channel(masterlist_channel_dict[masterlist])
     await channel.purge(limit=100)
     subs_wks = subs_sheet.worksheet(masterlist.upper())
