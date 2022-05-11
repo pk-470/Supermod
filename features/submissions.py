@@ -391,8 +391,10 @@ class Album_Submissions(
         if masterlist is None:
             for masterlist in masterlist_channel_dict:
                 await sheet_to_masterlist(self.bot, ctx, masterlist)
+                await update_subs_sheet(self.bot, ctx, masterlist)
         elif masterlist.lower() in masterlist_channel_dict:
             await sheet_to_masterlist(self.bot, ctx, masterlist.lower())
+            await update_subs_sheet(self.bot, ctx, masterlist.lower())
         else:
             ctx.send(
                 "Please provide a valid masterlist name, or no name if you wish to update "
