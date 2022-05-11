@@ -65,6 +65,7 @@ class Album_Submissions(
     def __init__(self, bot):
         self.bot = bot
         self.sheet_updating = False
+        self.masterlist_updating = False
         self.subs_sheet_update.start()
 
     @tasks.loop(hours=12)
@@ -84,6 +85,12 @@ class Album_Submissions(
     async def submit(self, ctx):
         if self.sheet_updating:
             await ctx.send("Submission sheets are currently updating. Try again later.")
+            return
+
+        if self.masterlist_updating:
+            await ctx.send(
+                "Masterlist channels are currently updating. Try again later."
+            )
             return
 
         await ctx.send(
@@ -122,6 +129,12 @@ class Album_Submissions(
         # Check if an appropriate masterlist is chosen, otherwise prompt for one.
         if self.sheet_updating:
             await ctx.send("Submission sheets are currently updating. Try again later.")
+            return
+
+        if self.masterlist_updating:
+            await ctx.send(
+                "Masterlist channels are currently updating. Try again later."
+            )
             return
 
         if masterlist is None:
@@ -277,6 +290,12 @@ class Album_Submissions(
             await ctx.send("Submission sheets are currently updating. Try again later.")
             return
 
+        if self.masterlist_updating:
+            await ctx.send(
+                "Masterlist channels are currently updating. Try again later."
+            )
+            return
+
         if masterlist is None:
             for masterlist in list(masterlist_channel_dict)[1:]:
                 album = choice(
@@ -329,6 +348,12 @@ class Album_Submissions(
             await ctx.send("Submission sheets are currently updating. Try again later.")
             return
 
+        if self.masterlist_updating:
+            await ctx.send(
+                "Masterlist channels are currently updating. Try again later."
+            )
+            return
+
         if masterlist is None:
             for masterlist in masterlist_channel_dict:
                 await update_subs_sheet(self.bot, ctx, masterlist)
@@ -351,6 +376,14 @@ class Album_Submissions(
             await ctx.send("Submission sheets are currently updating. Try again later.")
             return
 
+        if self.masterlist_updating:
+            await ctx.send(
+                "Masterlist channels are currently updating. Try again later."
+            )
+            return
+
+        self.masterlist_updating = True
+
         if masterlist is None:
             for masterlist in masterlist_channel_dict:
                 await sheet_to_masterlist(self.bot, masterlist)
@@ -367,6 +400,8 @@ class Album_Submissions(
                 "Please provide a valid masterlist name, or no name if you wish to update "
                 "all masterlists from the sheet data."
             )
+
+        self.masterlist_updating = False
 
 
 def msgs_by_index(response, subs_dict):
