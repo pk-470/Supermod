@@ -354,6 +354,8 @@ class Album_Submissions(
             )
             return
 
+        self.sheet_updating = True
+
         if masterlist is None:
             for masterlist in masterlist_channel_dict:
                 await update_subs_sheet(self.bot, ctx, masterlist)
@@ -364,6 +366,8 @@ class Album_Submissions(
                 "Please provide a valid masterlist name, or no name if you wish to update "
                 "all masterlists from the sheet data."
             )
+
+        self.sheet_updating = False
 
     @commands.command(
         brief="Pass all submissions from a sheet to its corresponding masterlist in a random order.",
@@ -386,15 +390,9 @@ class Album_Submissions(
 
         if masterlist is None:
             for masterlist in masterlist_channel_dict:
-                await sheet_to_masterlist(self.bot, masterlist)
-                await ctx.send(
-                    f"{masterlist.upper()} masterlist has been updated from the sheet data."
-                )
+                await sheet_to_masterlist(self.bot, ctx, masterlist)
         elif masterlist.lower() in masterlist_channel_dict:
-            await sheet_to_masterlist(self.bot, masterlist.lower())
-            await ctx.send(
-                f"{masterlist.upper()} masterlist has been updated from the sheet data."
-            )
+            await sheet_to_masterlist(self.bot, ctx, masterlist.lower())
         else:
             ctx.send(
                 "Please provide a valid masterlist name, or no name if you wish to update "
@@ -749,7 +747,7 @@ async def update_subs_sheet(bot, ctx, masterlist):
 # --------------------------------------------------SHEET-DATA-TO-MASTERLIST-------------------------------------------------
 
 
-async def sheet_to_masterlist(bot, masterlist):
+async def sheet_to_masterlist(bot, ctx, masterlist):
     # Pass all submissions from a sheet to its corresponding masterlist.
     channel = bot.get_channel(masterlist_channel_dict[masterlist])
     await channel.purge(limit=100)
@@ -769,6 +767,10 @@ async def sheet_to_masterlist(bot, masterlist):
         )
 
         await channel.send(sub.masterlist_format())
+
+    await ctx.send(
+        f"{masterlist.upper()} masterlist has been updated in a random order."
+    )
 
 
 # ------------------------------------------------SHEET-DATA-TO-MASTERLIST-END-------------------------------------------------
