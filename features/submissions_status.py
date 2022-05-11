@@ -23,11 +23,11 @@ voted_channel = int(getenv("VOTED_CHANNEL"))
 
 listeners_role_mention = "<@&" + str(getenv("LISTENERS_ROLE")) + ">"
 
-submissions_open_day = "Saturday"
-submissions_open_hour = 20
+submissions_open_day = "Sunday"
+submissions_open_hour = 0
 submissions_open_minute = 0
-submissions_closed_day = "Wednesday"
-submissions_closed_hour = 20
+submissions_closed_day = "Thursday"
+submissions_closed_hour = 0
 submission_closed_minute = 0
 
 
