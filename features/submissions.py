@@ -499,8 +499,8 @@ def get_check_data(masterlist):
             ) = get_existing_subs_and_submitters(list_name)
     elif masterlist in masterlist_channel_dict:
         (
-            existing_subs_dict[list_name],
-            submitters_dict[list_name],
+            existing_subs_dict[masterlist],
+            submitters_dict[masterlist],
         ) = get_existing_subs_and_submitters(masterlist)
 
     discussed_albums = [
@@ -571,6 +571,8 @@ def submission_check(sub, existing_subs_dict, submitters_dict, discussed_albums)
     if check_3 and sub.request != "replace":
         sub.warning = "user already in masterlist"
         return sub_msg_id
+
+    return 0
 
 
 # ---------------------------------------------------VARIOUS-CHECK-FUNCTIONS-END-------------------------------------------------
