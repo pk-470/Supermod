@@ -104,12 +104,44 @@ class Album_Submissions(
         try:
             response = await self.bot.wait_for("message", timeout=300, check=check)
 
-            if response.content.lower().startswith("stop"):
+            if response.content.lower() == "stop":
                 await ctx.send("The submission process has stopped.")
                 return
 
             sub = submission_make(response)
-            await submit_album(self.bot, sub)
+            if type(sub).__name__ == "Sub_error":
+                await ctx.send(
+                    "There is something wrong with the format of your submission."
+                )
+                return
+
+            existing_subs_dict, submitters_dict, discussed_albums = get_check_data(
+                sub.masterlist
+            )
+            error_id = submission_check(
+                sub, existing_subs_dict, submitters_dict, discussed_albums
+            )
+
+            if sub.warning == "discussed":
+                await ctx.send(
+                    f"**WARNING:** This album seems to have been discussed already on week {error_id}."
+                )
+            elif sub.warning == "duplicate":
+                channel = self.bot.get_channel(masterlist_channel_dict[sub.masterlist])
+                sub_msg = await channel.fetch_message(error_id)
+                await ctx.send(
+                    f"**WARNING:** This album seems to be in {sub.masterlist.upper()} already. "
+                    f"Link to existing submission: <{sub_msg.jump_url}>."
+                )
+            elif sub.warning == "user already in masterlist":
+                channel = self.bot.get_channel(masterlist_channel_dict[sub.masterlist])
+                sub_msg = await channel.fetch_message(error_id)
+                await ctx.send(
+                    f"**WARNING:** You seem to have a submission in {sub.masterlist.upper()} already. "
+                    f"Link to existing submission: <{sub_msg.jump_url}>."
+                )
+            else:
+                await submit_album(self.bot, sub)
         except TimeoutError:
             await ctx.send("Time has run out.")
         except:
@@ -445,6 +477,42 @@ async def submit_album(bot, sub: Submission):
     await sub.message.add_reaction("🆗")
 
 
+# ----------------------------------------------------------FETCHING-DATA--------------------------------------------------------
+
+
+def get_existing_subs_and_submitters(masterlist):
+    subs = subs_sheet.worksheet(masterlist.upper()).get_all_values()[1:]
+    existing_subs_in_masterlist = [(sub[0], sub[1]) for sub in subs]
+    submitters_in_masterlist = [int(sub[5]) for sub in subs]
+
+    return existing_subs_in_masterlist, submitters_in_masterlist
+
+
+def get_check_data(masterlist):
+    existing_subs_dict = {}
+    submitters_dict = {}
+    if masterlist is None or masterlist == "halted":
+        for list_name in masterlist_channel_dict:
+            (
+                existing_subs_dict[list_name],
+                submitters_dict[list_name],
+            ) = get_existing_subs_and_submitters(list_name)
+    elif masterlist in masterlist_channel_dict:
+        (
+            existing_subs_dict[list_name],
+            submitters_dict[list_name],
+        ) = get_existing_subs_and_submitters(masterlist)
+
+    discussed_albums = [
+        (entry[0], entry[1]) for entry in albums_wks.get_all_values()[1:]
+    ]
+
+    return existing_subs_dict, submitters_dict, discussed_albums
+
+
+# --------------------------------------------------------FETCHING-DATA-END-----------------------------------------------------
+
+
 # -----------------------------------------------------VARIOUS-CHECK-FUNCTIONS-----------------------------------------------------
 
 
@@ -483,6 +551,26 @@ def user_already_in_masterlist_check(sub: Submission, submitters_dict):
         )
     except:
         return False, 0
+
+
+def submission_check(sub, existing_subs_dict, submitters_dict, discussed_albums):
+    # Check whether the album has been discussed before.
+    check_1, week = discussed_check(sub, discussed_albums)
+    if check_1:
+        sub.warning = "discussed"
+        return week
+
+    # Check whether the album is already in the masterlist.
+    check_2, sub_msg_id = duplicate_check(sub, existing_subs_dict)
+    if check_2:
+        sub.warning = "duplicate"
+        return sub_msg_id
+
+    # Check whether the user has already submitted in the masterlist.
+    check_3, sub_msg_id = user_already_in_masterlist_check(sub, submitters_dict)
+    if check_3 and sub.request != "replace":
+        sub.warning = "user already in masterlist"
+        return sub_msg_id
 
 
 # ---------------------------------------------------VARIOUS-CHECK-FUNCTIONS-END-------------------------------------------------
@@ -550,23 +638,8 @@ async def subs_check_msg(bot, ctx, masterlist):
     # Check if there are new submissions, and if so create the mod approval message.
     # Return also the submissions dictionary.
 
-    # Fetch the relevant data from the submissions spreadsheet.
-    existing_subs_dict = {}
-    submitters_dict = {}
-    if masterlist is None or masterlist == "halted":
-        for list_name in masterlist_channel_dict:
-            subs = subs_sheet.worksheet(list_name.upper()).get_all_values()[1:]
-            existing_subs_dict[list_name] = [(sub[0], sub[1]) for sub in subs]
-            submitters_dict[list_name] = [int(sub[5]) for sub in subs]
-    elif masterlist in masterlist_channel_dict:
-        subs = subs_sheet.worksheet(masterlist.upper()).get_all_values()[1:]
-        existing_subs_dict[masterlist] = [(sub[0], sub[1]) for sub in subs]
-        submitters_dict[masterlist] = [int(sub[5]) for sub in subs]
-
-    # Fetch discussed albums.
-    discussed_albums = [
-        (entry[0], entry[1]) for entry in albums_wks.get_all_values()[1:]
-    ]
+    # Fetch the relevant data from the submissions spreadsheet and the discussed albums.
+    existing_subs_dict, submitters_dict, discussed_albums = get_check_data(masterlist)
 
     # Fetch submission history and keep those with no reaction.
     msgs = []
@@ -581,8 +654,6 @@ async def subs_check_msg(bot, ctx, masterlist):
 
     # Create the appropriate submissions dictionary.
     subs_dict = masterlist_dict(msgs, masterlist)
-
-    # Various checks.
 
     # Check if there are any new submissions.
     if not subs_dict:
@@ -599,6 +670,7 @@ async def subs_check_msg(bot, ctx, masterlist):
 
         return []
 
+    # Perform the various checks on new submissions.
     check_list = []
     for ind, sub in list(subs_dict.items()):
         # Check for errors.
@@ -608,40 +680,33 @@ async def subs_check_msg(bot, ctx, masterlist):
             )
             continue
 
-        # Check whether the album has been discussed before.
-        check_1, week = discussed_check(sub, discussed_albums)
-        if check_1:
-            sub.warning = "discussed"
+        # Check whether the album has been reviewed before, whether it is already in the
+        # specified masterlist, or whether the user has a submission already in the
+        # specified masterlist.
+        error_id = submission_check(
+            sub, existing_subs_dict, submitters_dict, discussed_albums
+        )
 
-        # Check whether the album is already in the masterlist.
-        check_2, sub_msg_id = duplicate_check(sub, existing_subs_dict)
-        if check_2:
-            sub.warning = "duplicate"
-
-        # Check whether the user has already submitted in the masterlist.
-        check_3, sub_msg_id = user_already_in_masterlist_check(sub, submitters_dict)
-        if check_3 and sub.request != "replace":
-            sub.warning = "user already in masterlist"
-
+        # Append the relevant warning to the submissions check message.
         check_msg = f"**{ind}.** {sub.sub_check_msg_full()}"
         if sub.warning == "discussed":
-            check_msg = (
-                check_msg + "\n"
-                f"**WARNING:** This album seems to have been discussed already on week {week}."
+            check_msg += (
+                "\n"
+                f"**WARNING:** This album seems to have been discussed already on week {error_id}."
             )
         elif sub.warning == "duplicate":
             channel = bot.get_channel(masterlist_channel_dict[sub.masterlist])
-            sub_msg = await channel.fetch_message(sub_msg_id)
-            check_msg = (
-                check_msg + "\n"
+            sub_msg = await channel.fetch_message(error_id)
+            check_msg += (
+                "\n"
                 f"**WARNING:** This album seems to be in {sub.masterlist.upper()} already. "
                 f"Link to existing submission: <{sub_msg.jump_url}>."
             )
         elif sub.warning == "user already in masterlist":
             channel = bot.get_channel(masterlist_channel_dict[sub.masterlist])
-            sub_msg = await channel.fetch_message(sub_msg_id)
-            check_msg = (
-                check_msg + "\n"
+            sub_msg = await channel.fetch_message(error_id)
+            check_msg += (
+                "\n"
                 f"**WARNING:** {sub.submitter_name} ({sub.submitter_id}) "
                 f"seems to have a submission in {sub.masterlist.upper()} already. "
                 f"Link to existing submission: <{sub_msg.jump_url}>."
