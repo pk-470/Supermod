@@ -1,4 +1,5 @@
 # Discord
+import discord
 from discord.ext import commands
 
 # Libraries to load tokens
@@ -6,6 +7,8 @@ from os import getenv, listdir
 
 # Libraries for various functions
 import pendulum
+import chat_exporter
+import io
 
 # Connect to Discord and define prefix
 bot = commands.Bot(command_prefix=",", case_insensitive=True)
@@ -55,6 +58,17 @@ class General(commands.Cog, description="General commands"):
     )
     async def hello(self, ctx):
         await ctx.send("It's fine now. Why? Because I am here!")
+
+    @commands.command(brief="Archive a channel.", description="Archive a channel.")
+    async def archive(self, ctx):
+        transcript = await chat_exporter.export(
+            ctx.channel, set_timezone="America/Toronto"
+        )
+        transcript_file = discord.File(
+            io.BytesIO(transcript.encode()), filename=f"{ctx.channel.name}.html"
+        )
+
+        await ctx.send(file=transcript_file)
 
 
 bot.add_cog(General(bot))
