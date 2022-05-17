@@ -453,13 +453,16 @@ def msgs_by_index(response, subs_dict):
 async def submit_album(bot, sub: Submission):
     # Submit an album.
     if sub.request == "replace":
-        wks = subs_sheet.worksheet(sub.masterlist.upper())
-        prev_sub_row = wks.find(f"{sub.submitter_id}").row
-        prev_sub_msg_id = wks.acell(f"G{prev_sub_row}").value
-        channel = bot.get_channel(masterlist_channel_dict[sub.masterlist])
-        prev_sub_msg = await channel.fetch_message(prev_sub_msg_id)
-        wks.delete_rows(prev_sub_row)
-        await prev_sub_msg.delete()
+        try:
+            wks = subs_sheet.worksheet(sub.masterlist.upper())
+            prev_sub_row = wks.find(f"{sub.submitter_id}").row
+            prev_sub_msg_id = wks.acell(f"G{prev_sub_row}").value
+            channel = bot.get_channel(masterlist_channel_dict[sub.masterlist])
+            prev_sub_msg = await channel.fetch_message(prev_sub_msg_id)
+            wks.delete_rows(prev_sub_row)
+            await prev_sub_msg.delete()
+        except:
+            pass
     sub_msg = await bot.get_channel(masterlist_channel_dict[sub.masterlist]).send(
         sub.masterlist_format()
     )
