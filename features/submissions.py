@@ -1,5 +1,4 @@
 # Library for Discord
-import discord
 from discord.ext import commands, tasks
 
 # Google spreadsheets
@@ -67,7 +66,7 @@ class Album_Submissions(
         self.bot = bot
         self.sheet_updating = False
         self.masterlist_updating = False
-        # self.subs_sheet_update.start()
+        self.subs_sheet_update.start()
 
     @tasks.loop(hours=12)
     async def subs_sheet_update(self):
@@ -145,8 +144,8 @@ class Album_Submissions(
                 await submit_album(self.bot, sub)
         except TimeoutError:
             await ctx.send("Time has run out.")
-        # except:
-        #     await ctx.send("Something went wrong. Please try again.")
+        except:
+            await ctx.send("Something went wrong. Please try again.")
 
     @commands.command(
         brief="Fetch and approve or reject submissions for the masterlists.",
