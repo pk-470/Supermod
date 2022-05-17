@@ -1,4 +1,5 @@
 # Library for Discord
+import discord
 from discord.ext import commands, tasks
 
 # Google spreadsheets
@@ -66,7 +67,7 @@ class Album_Submissions(
         self.bot = bot
         self.sheet_updating = False
         self.masterlist_updating = False
-        self.subs_sheet_update.start()
+        # self.subs_sheet_update.start()
 
     @tasks.loop(hours=12)
     async def subs_sheet_update(self):
@@ -144,8 +145,8 @@ class Album_Submissions(
                 await submit_album(self.bot, sub)
         except TimeoutError:
             await ctx.send("Time has run out.")
-        except:
-            await ctx.send("Something went wrong. Please try again.")
+        # except:
+        #     await ctx.send("Something went wrong. Please try again.")
 
     @commands.command(
         brief="Fetch and approve or reject submissions for the masterlists.",
@@ -452,20 +453,30 @@ def msgs_by_index(response, subs_dict):
 
 async def submit_album(bot, sub: Submission):
     # Submit an album.
+
+    # If the submitter asks for a replacement:
     if sub.request == "replace":
-        try:
-            wks = subs_sheet.worksheet(sub.masterlist.upper())
-            prev_sub_row = wks.find(f"{sub.submitter_id}").row
+        wks = subs_sheet.worksheet(sub.masterlist.upper())
+        # Locate the submitter in the spreadsheet.
+        prev_sub_cell = wks.find(f"{sub.submitter_id}")
+        if prev_sub_cell != None:
+            # If the submitter is in the spreadsheet, locate the message id of
+            # their previous submission in the same row as their user id.
+            prev_sub_row = prev_sub_cell.row
             prev_sub_msg_id = wks.acell(f"G{prev_sub_row}").value
+            # Get the channel corresponding to the requested masterlist and delete
+            # their previous submission.
             channel = bot.get_channel(masterlist_channel_dict[sub.masterlist])
             prev_sub_msg = await channel.fetch_message(prev_sub_msg_id)
-            wks.delete_rows(prev_sub_row)
             await prev_sub_msg.delete()
-        except:
-            pass
+            # Delete their submission from the spreadsheet.
+            wks.delete_rows(prev_sub_row)
+
+    # Submit the album in the requested masterlist.
     sub_msg = await bot.get_channel(masterlist_channel_dict[sub.masterlist]).send(
         sub.masterlist_format()
     )
+    # Add the submission to the spreadsheet.
     subs_sheet.worksheet(sub.masterlist.upper()).append_row(
         [
             sub.title,
@@ -477,6 +488,7 @@ async def submit_album(bot, sub: Submission):
             f"{sub_msg.id}",
         ]
     )
+    # Mark the submission as accepted.
     await sub.message.add_reaction("🆗")
 
 
@@ -484,6 +496,7 @@ async def submit_album(bot, sub: Submission):
 
 
 def get_existing_subs_and_submitters(masterlist):
+    # Get a list of all submitters and all submissions in a masterlist.
     subs = subs_sheet.worksheet(masterlist.upper()).get_all_values()[1:]
     existing_subs_in_masterlist = [(sub[0], sub[1]) for sub in subs]
     submitters_in_masterlist = [int(sub[5]) for sub in subs]
@@ -492,6 +505,8 @@ def get_existing_subs_and_submitters(masterlist):
 
 
 def get_check_data(masterlist):
+    # Get all the data required for the various checks in a masterlist
+    # (submitters, submissions, previously discussed albums).
     existing_subs_dict = {}
     submitters_dict = {}
     if masterlist is None or masterlist == "halted":
