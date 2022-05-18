@@ -657,9 +657,6 @@ async def subs_check_msg(bot, ctx, masterlist):
     # Check if there are new submissions, and if so create the mod approval message.
     # Return also the submissions dictionary.
 
-    # Fetch the relevant data from the submissions spreadsheet and the discussed albums.
-    existing_subs_dict, submitters_dict, discussed_albums = get_check_data(masterlist)
-
     # Fetch submission history and keep those with no reaction.
     msgs = []
     if masterlist == "halted":
@@ -688,6 +685,9 @@ async def subs_check_msg(bot, ctx, masterlist):
             )
 
         return []
+
+    # Fetch the relevant data from the submissions spreadsheet and the discussed albums.
+    existing_subs_dict, submitters_dict, discussed_albums = get_check_data(masterlist)
 
     # Perform the various checks on new submissions.
     check_list = []
