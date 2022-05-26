@@ -212,7 +212,7 @@ def mark_as_used(question):
 async def qotd_post(question, bot, ctx, overwrite=None):
     time_now = pendulum.now("America/Toronto")
     date_str = time_now.strftime("%m/%#d/%Y")
-    if overwrite == None:
+    if overwrite is None:
         await bot.get_channel(qotd_channel).send(
             f"__**{question[0].capitalize()} of the Day {date_str}:**__"
             f"\n\n{question[2]}"

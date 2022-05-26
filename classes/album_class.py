@@ -28,7 +28,7 @@ class Album:
 
 
 def remove_spaces(string):
-    if not string:
+    if string is None:
         return None
     string = str(string)
     if string:
@@ -53,14 +53,14 @@ def make_title(string):
 
 
 def handle_input(strings):
-    if not strings:
+    if strings is None:
         return None
     else:
         return [make_title(string) for string in strings.replace("/", ", ").split(", ")]
 
 
 def handle_genres(genres):
-    if not genres:
+    if genres is None:
         return None
     else:
         genres = handle_input(genres)
@@ -72,7 +72,7 @@ def handle_genres(genres):
 
 
 def handle_genre_categories(genre_categories):
-    if not genre_categories:
+    if genre_categories is None:
         return None
     else:
         genre_categories = handle_input(genre_categories)

@@ -43,7 +43,7 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
         "week's newsletter is returned.",
     )
     async def news(self, ctx, date_str=None):
-        if date_str == None:
+        if date_str is None:
             date = pendulum.now("America/Toronto")
         else:
             try:
@@ -68,7 +68,7 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
         description="Add a message to this week's official newsletter (argument: message).",
     )
     async def news_full(self, ctx, *, message=None):
-        if message == None:
+        if message is None:
             await ctx.send(
                 "To add a message to this week's official newsletter, "
                 "write it after the 'news_full' command (e.g. news_full 'message')."
@@ -151,7 +151,7 @@ async def newsletter_post(channel, sheet_data, date, message=None):
     title_day, week = end_of_week(date)
     albums = news_get(sheet_data, week)
     news_message, errors = split_by_length(albums)
-    if message == None:
+    if message is None:
         post_full = (
             "**__Omnivoracious Listeners New Music Newsletter (Week of "
             + title_day.strftime("%B")
