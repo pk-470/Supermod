@@ -330,39 +330,9 @@ class Album_Submissions(
 
         if masterlist is None:
             for masterlist in list(masterlist_channel_dict)[1:]:
-                album = choice(
-                    subs_sheet.worksheet(masterlist.upper()).get_all_values()[1:]
-                )
-                sub = Submission(
-                    artist=album[1],
-                    title=album[0],
-                    genres=album[2],
-                    release_date=album[3],
-                    submitter_name=album[4],
-                    submitter_id=album[5],
-                    masterlist=masterlist,
-                    message=None,
-                )
-
-                await ctx.send(
-                    masterlist.upper() + " choice: " + sub.masterlist_format()
-                )
+                await random_album(ctx, masterlist)
         elif masterlist.lower() in masterlist_channel_dict:
-            album = choice(
-                subs_sheet.worksheet(masterlist.upper()).get_all_values()[1:]
-            )
-            sub = Submission(
-                artist=album[1],
-                title=album[0],
-                genres=album[2],
-                release_date=album[3],
-                submitter_name=album[4],
-                submitter_id=album[5],
-                masterlist=masterlist,
-                message=None,
-            )
-
-            await ctx.send(masterlist.upper() + " choice: " + sub.masterlist_format())
+            await random_album(ctx, masterlist)
         else:
             ctx.send(
                 "Please provide a valid masterlist name, or no name if you wish"
@@ -448,6 +418,22 @@ def msgs_by_index(response, subs_dict):
         sub_indices.append(ind)
 
     return sub_indices, [subs_dict[ind].message for ind in sub_indices]
+
+
+async def random_album(ctx, masterlist):
+    album = choice(subs_sheet.worksheet(masterlist.upper()).get_all_values()[1:])
+    sub = Submission(
+        artist=album[1],
+        title=album[0],
+        genres=album[2],
+        release_date=album[3],
+        submitter_name=album[4],
+        submitter_id=album[5],
+        masterlist=masterlist,
+        message=None,
+    )
+
+    await ctx.send(f"{masterlist.upper()} choice: {sub.masterlist_format()}")
 
 
 async def submit_album(bot, sub: Submission):
