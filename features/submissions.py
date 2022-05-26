@@ -169,7 +169,7 @@ class Album_Submissions(
             )
             return
 
-        if masterlist is None:
+        if not masterlist:
             subs_dict = await subs_check_msg(self.bot, ctx, masterlist=None)
         elif masterlist.lower() in (
             "voted",
@@ -235,15 +235,15 @@ class Album_Submissions(
                     )
                 elif masterlist == "halted":
                     for _, sub in list(subs_dict.items()):
-                        if type(sub).__name__ != "Sub_error" and sub.warning is None:
+                        if type(sub).__name__ != "Sub_error" and not sub.warning:
                             await sub.message.clear_reaction("🇭")
                             await submit_album(self.bot, sub)
                     await ctx.send(
                         "All new submissions without errors or warnings were added to the masterlists."
                     )
-                elif masterlist is None:
+                elif not masterlist:
                     for _, sub in list(subs_dict.items()):
-                        if type(sub).__name__ != "Sub_error" and sub.warning is None:
+                        if type(sub).__name__ != "Sub_error" and not sub.warning:
                             await submit_album(self.bot, sub)
                     await ctx.send(
                         "All new submissions without errors or warnings were added to the masterlists."
@@ -252,7 +252,7 @@ class Album_Submissions(
                     for _, sub in list(subs_dict.items()):
                         if (
                             type(sub).__name__ != "Sub_error"
-                            and sub.warning is None
+                            and not sub.warning
                             and sub.masterlist == masterlist
                         ):
                             await submit_album(self.bot, sub)
@@ -328,7 +328,7 @@ class Album_Submissions(
             )
             return
 
-        if masterlist is None:
+        if not masterlist:
             for masterlist in list(masterlist_channel_dict)[1:]:
                 album = choice(
                     subs_sheet.worksheet(masterlist.upper()).get_all_values()[1:]
@@ -388,7 +388,7 @@ class Album_Submissions(
 
         self.sheet_updating = True
 
-        if masterlist is None:
+        if not masterlist:
             for masterlist in masterlist_channel_dict:
                 await update_subs_sheet(self.bot, ctx, masterlist)
         elif masterlist.lower() in masterlist_channel_dict:
@@ -420,7 +420,7 @@ class Album_Submissions(
 
         self.masterlist_updating = True
 
-        if masterlist is None:
+        if not masterlist:
             for masterlist in masterlist_channel_dict:
                 await sheet_to_masterlist(self.bot, ctx, masterlist)
                 await update_subs_sheet(self.bot, ctx, masterlist)
@@ -508,7 +508,7 @@ def get_check_data(masterlist):
     # (submitters, submissions, previously discussed albums).
     existing_subs_dict = {}
     submitters_dict = {}
-    if masterlist is None or masterlist == "halted":
+    if not masterlist or masterlist == "halted":
         for list_name in masterlist_channel_dict:
             (
                 existing_subs_dict[list_name],
@@ -637,7 +637,7 @@ def masterlist_dict(msgs, masterlist):
     entry = 1
     for msg in msgs:
         sub_album = submission_make(msg)
-        if masterlist is None or masterlist == "halted":
+        if not masterlist or masterlist == "halted":
             subs_dict[str(entry)] = sub_album
             entry = entry + 1
         elif masterlist == "error" and type(sub_album).__name__ == "Sub_error":
@@ -673,7 +673,7 @@ async def subs_check_msg(bot, ctx, masterlist):
 
     # Check if there are any new submissions.
     if not subs_dict:
-        if masterlist is None:
+        if not masterlist:
             await ctx.send("There are no new submissions.")
         elif masterlist == "error":
             await ctx.send("There are no new submissions with errors.")

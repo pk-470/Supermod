@@ -20,6 +20,7 @@ if local_mode == "ON":
 announcements_channel = int(getenv("ANNOUNCEMENTS_CHANNEL"))
 submissions_channel = int(getenv("SUBMISSIONS_CHANNEL"))
 voted_channel = int(getenv("VOTED_CHANNEL"))
+talk_to_the_staff_channel = int(getenv("TALK_TO_THE_STAFF_CHANNEL"))
 
 listeners_role_mention = "<@&" + str(getenv("LISTENERS_ROLE")) + ">"
 
@@ -73,7 +74,7 @@ class Submissions_status(commands.Cog):
                 "Good luck choosing!\n\n"
                 "Use %help for a full list of commands for Ultimate Polling.\n\n"
                 "*Note: If voting reactions are still not enabled an hour after this message, "
-                "then you should bring it up in #talk-to-the-staff.*"
+                f"then you should bring it up in* {self.bot.get_channel(talk_to_the_staff_channel).mention}."
             )
             print(
                 '"Submissions is closed" message has been posted (date: '
