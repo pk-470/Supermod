@@ -17,19 +17,19 @@ if local_mode == "ON":
 
 
 # Setting
-announcements_channel = int(getenv("ANNOUNCEMENTS_CHANNEL"))
-submissions_channel = int(getenv("SUBMISSIONS_CHANNEL"))
-voted_channel = int(getenv("VOTED_CHANNEL"))
-talk_to_the_staff_channel = int(getenv("TALK_TO_THE_STAFF_CHANNEL"))
+ANNOUNCEMENTS_CHANNEL = int(getenv("ANNOUNCEMENTS_CHANNEL"))
+SUBMISSIONS_CHANNEL = int(getenv("SUBMISSIONS_CHANNEL"))
+VOTED_CHANNEL = int(getenv("VOTED_CHANNEL"))
+TALK_TO_THE_STAFF_CHANNEL = int(getenv("TALK_TO_THE_STAFF_CHANNEL"))
 
-listeners_role_mention = "<@&" + str(getenv("LISTENERS_ROLE")) + ">"
+LISTENERS_ROLE_MENTION = "<@&" + str(getenv("LISTENERS_ROLE")) + ">"
 
-submissions_open_day = "Sunday"
-submissions_open_hour = 0
-submissions_open_minute = 0
-submissions_closed_day = "Thursday"
-submissions_closed_hour = 0
-submission_closed_minute = 0
+SUBMISSIONS_OPEN_DAY = "Sunday"
+SUBMISSIONS_OPEN_HOUR = 0
+SUBMISSIONS_OPEN_MINUTE = 0
+SUBMISSIONS_CLOSED_DAY = "Thursday"
+SUBMISSIONS_CLOSED_HOUR = 0
+SUBMISSIONS_CLOSED_MINUTE = 0
 
 
 class Submissions_status(commands.Cog):
@@ -47,13 +47,13 @@ class Submissions_status(commands.Cog):
             + ")."
         )
         if (
-            time_now.strftime("%A") == submissions_open_day
-            and time_now.hour == submissions_open_hour
-            and time_now.minute == submissions_open_minute
+            time_now.strftime("%A") == SUBMISSIONS_OPEN_DAY
+            and time_now.hour == SUBMISSIONS_OPEN_HOUR
+            and time_now.minute == SUBMISSIONS_OPEN_MINUTE
         ):
-            await self.bot.get_channel(announcements_channel).send(
-                f"Hello {listeners_role_mention}. "
-                f"{self.bot.get_channel(submissions_channel).mention} is now open."
+            await self.bot.get_channel(ANNOUNCEMENTS_CHANNEL).send(
+                f"Hello {LISTENERS_ROLE_MENTION}. "
+                f"{self.bot.get_channel(SUBMISSIONS_CHANNEL).mention} is now open."
             )
             print(
                 '"Submissions is open" message has been posted (date: '
@@ -61,20 +61,20 @@ class Submissions_status(commands.Cog):
                 + ")."
             )
         if (
-            time_now.strftime("%A") == submissions_closed_day
-            and time_now.hour == submissions_closed_hour
-            and time_now.minute == submission_closed_minute
+            time_now.strftime("%A") == SUBMISSIONS_CLOSED_DAY
+            and time_now.hour == SUBMISSIONS_CLOSED_HOUR
+            and time_now.minute == SUBMISSIONS_CLOSED_MINUTE
         ):
-            await self.bot.get_channel(announcements_channel).send(
-                f"Hello {listeners_role_mention}. "
-                f"{self.bot.get_channel(submissions_channel).mention} is now closed and voting is open.\n"
-                f"Go to the {self.bot.get_channel(voted_channel).mention} and use any of the :thumbs up: emoji "
+            await self.bot.get_channel(ANNOUNCEMENTS_CHANNEL).send(
+                f"Hello {LISTENERS_ROLE_MENTION}. "
+                f"{self.bot.get_channel(SUBMISSIONS_CHANNEL).mention} is now closed and voting is open.\n"
+                f"Go to the {self.bot.get_channel(VOTED_CHANNEL).mention} and use any of the :thumbs up: emoji "
                 "on the album you would like to select, and our voting bot (Ultimate Polling) will send you "
                 "a confirmation via DM. You may vote 10 times, max of 1 time per album.\n"
                 "Good luck choosing!\n\n"
                 "Use %help for a full list of commands for Ultimate Polling.\n\n"
                 "*Note: If voting reactions are still not enabled an hour after this message, "
-                f"then you should bring it up in* {self.bot.get_channel(talk_to_the_staff_channel).mention}."
+                f"then you should bring it up in* {self.bot.get_channel(TALK_TO_THE_STAFF_CHANNEL).mention}."
             )
             print(
                 '"Submissions is closed" message has been posted (date: '

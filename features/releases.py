@@ -29,7 +29,21 @@ else:
 
 
 # Setting
-news_sheet = gsa.open_by_url(getenv("NEWS_SHEET_URL"))
+NEWS_SHEET = gsa.open_by_url(getenv("NEWS_SHEET_URL"))
+
+GENRE_CHANNELS = {
+    "Experimental Rock": int(getenv("EXPERIMENTAL_ROCK")),
+    "Hard Rock": int(getenv("HARD_ROCK")),
+    "Soft Rock": int(getenv("SOFT_ROCK")),
+    "Punk": int(getenv("PUNK")),
+    "Core": int(getenv("CORE")),
+    "Metal": int(getenv("METAL")),
+    "Extreme Metal": int(getenv("EXTREME_METAL")),
+    "Classical / Jazz / Blues": int(getenv("CLASSICAL_JAZZ_BLUES")),
+    "Country / Folk": int(getenv("COUNTRY_FOLK")),
+    "Electronic": int(getenv("ELECTRONIC")),
+    "Pop / Hip Hop": int(getenv("POP_HIP_HOP")),
+}
 
 
 class Newsletter(commands.Cog, description="Functions to fetch the weekly newsletter."):
@@ -60,7 +74,7 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
                 return
 
         sheet = f"{date.year} OL Rock Albums List"
-        sheet_data = news_sheet.worksheet(sheet).get_all_values()
+        sheet_data = NEWS_SHEET.worksheet(sheet).get_all_values()
         await newsletter_post(ctx, sheet_data, date)
 
     @commands.command(
@@ -76,20 +90,29 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
             return
         else:
             date = pendulum.now("America/Toronto")
-            sheet_data = news_sheet.sheet1.get_all_values()
+            sheet_data = NEWS_SHEET.sheet1.get_all_values()
             await newsletter_post(ctx, sheet_data, date, message)
 
     @commands.command(
         brief="Split the albums in this week's newsletter by genre category.",
         description="Split the albums in this week's newsletter by genre category.",
     )
-    async def news_by_genre(self, ctx):
-        sheet_data = news_sheet.sheet1.get_all_values()
+    async def news_by_genre(self, ctx, arg=None):
+        sheet_data = NEWS_SHEET.sheet1.get_all_values()
         genre_categories_posts, errors_message = news_by_genre(sheet_data)
         for genre_category in genre_categories_posts:
             posts = post_split(genre_categories_posts[genre_category], 2000)
             for post in posts:
-                await ctx.send(post)
+                if arg == "post":
+                    await self.bot.get_channel(GENRE_CHANNELS[genre_category]).send(
+                        post
+                    )
+                else:
+                    await ctx.send(post)
+        if arg == "post":
+            await ctx.send(
+                "The genre newsletters have been posted in their respective channels."
+            )
         if errors_message:
             await ctx.send(errors_message)
 

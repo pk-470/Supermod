@@ -34,11 +34,11 @@ else:
 
 
 # Setting
-promos_wks = gsa.open_by_url(getenv("QOTD_SHEET_URL")).get_worksheet(1)
+PROMOS_WKS = gsa.open_by_url(getenv("QOTD_SHEET_URL")).get_worksheet(1)
 
-server = int(getenv("SERVER"))
-promos_channel = int(getenv("PROMOS_CHANNEL"))
-rejected_promos_channel = int(getenv("QOTD_APPROVAL_CHANNEL"))
+SERVER = int(getenv("SERVER"))
+PROMOS_CHANNEL = int(getenv("PROMOS_CHANNEL"))
+REJECTED_PROMOS_CHANNEL = int(getenv("QOTD_APPROVAL_CHANNEL"))
 
 
 class Promotions(
@@ -53,7 +53,7 @@ class Promotions(
         description="Follow the bot's instructions to add a creator / partner for promotion.",
     )
     async def promo_add(self, ctx):
-        dates = [f"{promo[4]}/{promo[5]}" for promo in promos_wks.get_all_values()[1:]]
+        dates = [f"{promo[4]}/{promo[5]}" for promo in PROMOS_WKS.get_all_values()[1:]]
         new_promo = []
 
         def check(resp):
@@ -123,7 +123,7 @@ class Promotions(
             await ctx.send("Do you want to submit (y/n)?")
             confirm = await self.bot.wait_for("message", timeout=30, check=check)
             if confirm.content.lower().startswith("y"):
-                promos_wks.append_row(new_promo)
+                PROMOS_WKS.append_row(new_promo)
                 await ctx.send("The promo was submitted.")
             elif confirm.content.lower().startswith("n"):
                 await ctx.send("The promo was not submitted.")
@@ -147,24 +147,24 @@ class Promotions(
             + time_now.strftime("%Y-%m-%d, %H:%M:%S EST")
             + ")."
         )
-        promos = promos_wks.get_all_values()[1:]
+        promos = PROMOS_WKS.get_all_values()[1:]
         for promo in promos:
             promo = [remove_spaces(i) for i in promo]
             promo[5] = promo[5].split(":")[0]
             if promo[4].lower().startswith("last"):
                 promo[4] = time_now._last_of_month().day
             if time_now.day == int(promo[4]) and time_now.hour == int(promo[5]):
-                guild = self.bot.get_guild(server)
+                guild = self.bot.get_guild(SERVER)
                 if promo[6] != "N/A":
                     try:
                         for member_id in promo[6].split(" "):
                             await guild.fetch_member(
                                 int(remove_spaces(member_id)[3:-1])
                             )
-                        post_in_channel = promos_channel
+                        post_in_channel = PROMOS_CHANNEL
                     except:
-                        post_in_channel = rejected_promos_channel
-                        await self.bot.get_channel(rejected_promos_channel).send(
+                        post_in_channel = REJECTED_PROMOS_CHANNEL
+                        await self.bot.get_channel(REJECTED_PROMOS_CHANNEL).send(
                             "The following promo will not be posted because I can't "
                             "find at least one of its related members in the server:"
                         )
@@ -176,7 +176,7 @@ class Promotions(
                     else:
                         await self.bot.get_channel(post_in_channel).send(promo_msg)
                 else:
-                    await self.bot.get_channel(promos_channel).send(
+                    await self.bot.get_channel(PROMOS_CHANNEL).send(
                         f"**{promo[2]}**\n\n{promo[3]}"
                     )
 

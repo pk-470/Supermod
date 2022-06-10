@@ -28,13 +28,13 @@ else:
 
 
 # Setting
-qotd_wks = gsa.open_by_url(getenv("QOTD_SHEET_URL")).sheet1
+QOTD_WKS = gsa.open_by_url(getenv("QOTD_SHEET_URL")).sheet1
 
-qotd_channel = int(getenv("QOTD_CHANNEL"))
-qotd_approval_channel = int(getenv("QOTD_APPROVAL_CHANNEL"))
+QOTD_CHANNEL = int(getenv("QOTD_CHANNEL"))
+QOTD_APPROVAL_CHANNEL = int(getenv("QOTD_APPROVAL_CHANNEL"))
 
-qotd_hour = 6
-qotd_minute = 0
+QOTD_HOUR = 6
+QOTD_MINUTE = 0
 
 
 class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
@@ -106,7 +106,7 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
             )
             response = await self.bot.wait_for("message", timeout=30, check=check)
             if response.content.lower()[0] == "y":
-                qotd_wks.append_row([qotd_type, repeatable, qotd])
+                QOTD_WKS.append_row([qotd_type, repeatable, qotd])
                 await ctx.send("The QOTD was added to the spreadsheet.")
             elif response.content.lower()[0] == "n":
                 await ctx.send("The QOTD was not added to the spreadsheet.")
@@ -131,9 +131,9 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
             + time_now.strftime("%Y-%m-%d, %H:%M:%S EST")
             + ")."
         )
-        if time_now.hour == qotd_hour and time_now.minute == qotd_minute:
+        if time_now.hour == QOTD_HOUR and time_now.minute == QOTD_MINUTE:
             await qotd_interact(
-                self.bot, self.bot.get_channel(qotd_approval_channel), timeout=1800
+                self.bot, self.bot.get_channel(QOTD_APPROVAL_CHANNEL), timeout=1800
             )
 
 
@@ -189,7 +189,7 @@ async def qotd_interact(bot, channel, timeout):
 
 
 def qotd_get():
-    questions = qotd_wks.get_all_values()
+    questions = QOTD_WKS.get_all_values()
     questions = [
         question
         for question in questions
@@ -201,24 +201,24 @@ def qotd_get():
 
 
 def mark_as_used(question):
-    question_row = qotd_wks.find(question[2]).row
-    question_count = qotd_wks.cell(question_row, 3)
+    question_row = QOTD_WKS.find(question[2]).row
+    question_count = QOTD_WKS.cell(question_row, 3)
     if question_count:
-        qotd_wks.update_cell(question_row, 4, 1)
+        QOTD_WKS.update_cell(question_row, 4, 1)
     else:
-        qotd_wks.update_cell(question_row, 4, int(question_count) + 1)
+        QOTD_WKS.update_cell(question_row, 4, int(question_count) + 1)
 
 
 async def qotd_post(question, bot, ctx, overwrite=None):
     time_now = pendulum.now("America/Toronto")
     date_str = time_now.strftime("%m/%#d/%Y")
     if overwrite is None:
-        await bot.get_channel(qotd_channel).send(
+        await bot.get_channel(QOTD_CHANNEL).send(
             f"__**{question[0].capitalize()} of the Day {date_str}:**__"
             f"\n\n{question[2]}"
         )
     else:
-        await bot.get_channel(qotd_channel).send(
+        await bot.get_channel(QOTD_CHANNEL).send(
             f"__**{question[0].capitalize()} of the Day {date_str}:**__"
             f"\n\n{overwrite}"
         )

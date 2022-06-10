@@ -18,7 +18,10 @@ genre_categories_dict = {
     "Experimental": "Experimental Rock",
     "Extreme": "Extreme Metal",
     "Pop": "Pop / Hip Hop",
+    "Hip Hop": "Pop / Hip Hop",
     "Classical": "Classical / Jazz / Blues",
     "Jazz": "Classical / Jazz / Blues",
     "Blues": "Classical / Jazz / Blues",
+    "Country": "Country / Folk",
+    "Folk": "Country / Folk",
 }

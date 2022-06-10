@@ -35,25 +35,25 @@ else:
 
 
 # Setting
-albums_wks = gsa.open_by_url(getenv("ALBUMS_SHEET_URL")).sheet1
-weeks_wks = gsa.open_by_url(getenv("ALBUMS_SHEET_URL")).get_worksheet(1)
-subs_sheet = gsa.open_by_url(getenv("SUBS_SHEET_URL"))
+ALBUMS_WKS = gsa.open_by_url(getenv("ALBUMS_SHEET_URL")).sheet1
+WEEKS_WKS = gsa.open_by_url(getenv("ALBUMS_SHEET_URL")).get_worksheet(1)
+SUBS_SHEET = gsa.open_by_url(getenv("SUBS_SHEET_URL"))
 
-approval_channel = int(getenv("QOTD_APPROVAL_CHANNEL"))
+SUB_APPROVAL_CHANNEL = int(getenv("QOTD_APPROVAL_CHANNEL"))
 
-submissions_channel = int(getenv("SUBMISSIONS_CHANNEL"))
-voted_channel = int(getenv("VOTED_CHANNEL"))
-new_channel = int(getenv("NEW_CHANNEL"))
-modern_channel = int(getenv("MODERN_CHANNEL"))
-classic_channel = int(getenv("CLASSIC_CHANNEL"))
-theme_channel = int(getenv("THEME_CHANNEL"))
+SUBMISSIONS_CHANNEL = int(getenv("SUBMISSIONS_CHANNEL"))
+VOTED_CHANNEL = int(getenv("VOTED_CHANNEL"))
+NEW_CHANNEL = int(getenv("NEW_CHANNEL"))
+MODERN_CHANNEL = int(getenv("MODERN_CHANNEL"))
+CLASSIC_CHANNEL = int(getenv("CLASSIC_CHANNEL"))
+THEME_CHANNEL = int(getenv("THEME_CHANNEL"))
 
-masterlist_channel_dict = {
-    "voted": voted_channel,
-    "new": new_channel,
-    "modern": modern_channel,
-    "classic": classic_channel,
-    "theme": theme_channel,
+MASTERLIST_CHANNEL_DICT = {
+    "voted": VOTED_CHANNEL,
+    "new": NEW_CHANNEL,
+    "modern": MODERN_CHANNEL,
+    "classic": CLASSIC_CHANNEL,
+    "theme": THEME_CHANNEL,
 }
 
 
@@ -71,9 +71,9 @@ class Album_Submissions(
     @tasks.loop(hours=12)
     async def subs_sheet_update(self):
         self.sheet_updating = True
-        for masterlist in masterlist_channel_dict:
+        for masterlist in MASTERLIST_CHANNEL_DICT:
             await update_subs_sheet(
-                self.bot, self.bot.get_channel(approval_channel), masterlist
+                self.bot, self.bot.get_channel(SUB_APPROVAL_CHANNEL), masterlist
             )
         self.sheet_updating = False
 
@@ -127,14 +127,14 @@ class Album_Submissions(
                     f"**WARNING:** This album seems to have been discussed already on week {error_id}."
                 )
             elif sub.warning == "duplicate":
-                channel = self.bot.get_channel(masterlist_channel_dict[sub.masterlist])
+                channel = self.bot.get_channel(MASTERLIST_CHANNEL_DICT[sub.masterlist])
                 sub_msg = await channel.fetch_message(error_id)
                 await ctx.send(
                     f"**WARNING:** This album seems to be in {sub.masterlist.upper()} already. "
                     f"Link to existing submission: <{sub_msg.jump_url}>."
                 )
             elif sub.warning == "user already in masterlist":
-                channel = self.bot.get_channel(masterlist_channel_dict[sub.masterlist])
+                channel = self.bot.get_channel(MASTERLIST_CHANNEL_DICT[sub.masterlist])
                 sub_msg = await channel.fetch_message(error_id)
                 await ctx.send(
                     f"**WARNING:** You seem to have a submission in {sub.masterlist.upper()} already. "
@@ -329,9 +329,9 @@ class Album_Submissions(
             return
 
         if masterlist is None:
-            for masterlist in list(masterlist_channel_dict)[1:]:
+            for masterlist in list(MASTERLIST_CHANNEL_DICT)[1:]:
                 await random_album(ctx, masterlist)
-        elif masterlist.lower() in masterlist_channel_dict:
+        elif masterlist.lower() in MASTERLIST_CHANNEL_DICT:
             await random_album(ctx, masterlist)
         else:
             ctx.send(
@@ -359,9 +359,9 @@ class Album_Submissions(
         self.sheet_updating = True
 
         if masterlist is None:
-            for masterlist in masterlist_channel_dict:
+            for masterlist in MASTERLIST_CHANNEL_DICT:
                 await update_subs_sheet(self.bot, ctx, masterlist)
-        elif masterlist.lower() in masterlist_channel_dict:
+        elif masterlist.lower() in MASTERLIST_CHANNEL_DICT:
             await update_subs_sheet(self.bot, ctx, masterlist.lower())
         else:
             ctx.send(
@@ -391,10 +391,10 @@ class Album_Submissions(
         self.masterlist_updating = True
 
         if masterlist is None:
-            for masterlist in masterlist_channel_dict:
+            for masterlist in MASTERLIST_CHANNEL_DICT:
                 await sheet_to_masterlist(self.bot, ctx, masterlist)
                 await update_subs_sheet(self.bot, ctx, masterlist)
-        elif masterlist.lower() in masterlist_channel_dict:
+        elif masterlist.lower() in MASTERLIST_CHANNEL_DICT:
             await sheet_to_masterlist(self.bot, ctx, masterlist.lower())
             await update_subs_sheet(self.bot, ctx, masterlist.lower())
         else:
@@ -421,7 +421,7 @@ def msgs_by_index(response, subs_dict):
 
 
 async def random_album(ctx, masterlist):
-    album = choice(subs_sheet.worksheet(masterlist.upper()).get_all_values()[1:])
+    album = choice(SUBS_SHEET.worksheet(masterlist.upper()).get_all_values()[1:])
     sub = Submission(
         artist=album[1],
         title=album[0],
@@ -441,7 +441,7 @@ async def submit_album(bot, sub: Submission):
 
     # If the submitter asks for a replacement:
     if sub.request == "replace":
-        wks = subs_sheet.worksheet(sub.masterlist.upper())
+        wks = SUBS_SHEET.worksheet(sub.masterlist.upper())
         # Locate the submitter in the spreadsheet.
         prev_sub_cell = wks.find(f"{sub.submitter_id}")
         if prev_sub_cell is not None:
@@ -451,18 +451,18 @@ async def submit_album(bot, sub: Submission):
             prev_sub_msg_id = wks.acell(f"G{prev_sub_row}").value
             # Get the channel corresponding to the requested masterlist and delete
             # their previous submission.
-            channel = bot.get_channel(masterlist_channel_dict[sub.masterlist])
+            channel = bot.get_channel(MASTERLIST_CHANNEL_DICT[sub.masterlist])
             prev_sub_msg = await channel.fetch_message(prev_sub_msg_id)
             await prev_sub_msg.delete()
             # Delete their submission from the spreadsheet.
             wks.delete_rows(prev_sub_row)
 
     # Submit the album in the requested masterlist.
-    sub_msg = await bot.get_channel(masterlist_channel_dict[sub.masterlist]).send(
+    sub_msg = await bot.get_channel(MASTERLIST_CHANNEL_DICT[sub.masterlist]).send(
         sub.masterlist_format()
     )
     # Add the submission to the spreadsheet.
-    subs_sheet.worksheet(sub.masterlist.upper()).append_row(
+    SUBS_SHEET.worksheet(sub.masterlist.upper()).append_row(
         [
             sub.title,
             sub.artist,
@@ -482,7 +482,7 @@ async def submit_album(bot, sub: Submission):
 
 def get_existing_subs_and_submitters(masterlist):
     # Get a list of all submitters and all submissions in a masterlist.
-    subs = subs_sheet.worksheet(masterlist.upper()).get_all_values()[1:]
+    subs = SUBS_SHEET.worksheet(masterlist.upper()).get_all_values()[1:]
     existing_subs_in_masterlist = [(sub[0], sub[1]) for sub in subs]
     submitters_in_masterlist = [int(sub[5]) for sub in subs]
 
@@ -495,19 +495,19 @@ def get_check_data(masterlist):
     existing_subs_dict = {}
     submitters_dict = {}
     if masterlist is None or masterlist == "halted":
-        for list_name in masterlist_channel_dict:
+        for list_name in MASTERLIST_CHANNEL_DICT:
             (
                 existing_subs_dict[list_name],
                 submitters_dict[list_name],
             ) = get_existing_subs_and_submitters(list_name)
-    elif masterlist in masterlist_channel_dict:
+    elif masterlist in MASTERLIST_CHANNEL_DICT:
         (
             existing_subs_dict[masterlist],
             submitters_dict[masterlist],
         ) = get_existing_subs_and_submitters(masterlist)
 
     discussed_albums = [
-        (entry[0], entry[1]) for entry in albums_wks.get_all_values()[1:]
+        (entry[0], entry[1]) for entry in ALBUMS_WKS.get_all_values()[1:]
     ]
 
     return existing_subs_dict, submitters_dict, discussed_albums
@@ -523,7 +523,7 @@ def discussed_check(sub: Submission, discussed_albums):
     # Check if a submission has been reviewed before in the server.
     try:
         row = discussed_albums.index((sub.title, sub.artist))
-        return True, albums_wks.acell(f"C{row + 2}").value
+        return True, ALBUMS_WKS.acell(f"C{row + 2}").value
     except:
         return False, 0
 
@@ -535,7 +535,7 @@ def duplicate_check(sub: Submission, existing_subs_dict):
         return (
             True,
             int(
-                subs_sheet.worksheet(sub.masterlist.upper()).acell(f"G{row + 2}").value
+                SUBS_SHEET.worksheet(sub.masterlist.upper()).acell(f"G{row + 2}").value
             ),
         )
     except:
@@ -549,7 +549,7 @@ def user_already_in_masterlist_check(sub: Submission, submitters_dict):
         return (
             True,
             int(
-                subs_sheet.worksheet(sub.masterlist.upper()).acell(f"G{row + 2}").value
+                SUBS_SHEET.worksheet(sub.masterlist.upper()).acell(f"G{row + 2}").value
             ),
         )
     except:
@@ -646,11 +646,11 @@ async def subs_check_msg(bot, ctx, masterlist):
     # Fetch submission history and keep those with no reaction.
     msgs = []
     if masterlist == "halted":
-        async for msg in bot.get_channel(submissions_channel).history(limit=100):
+        async for msg in bot.get_channel(SUBMISSIONS_CHANNEL).history(limit=100):
             if "🇭" in [reaction.emoji for reaction in msg.reactions]:
                 msgs.append(msg)
     else:
-        async for msg in bot.get_channel(submissions_channel).history(limit=100):
+        async for msg in bot.get_channel(SUBMISSIONS_CHANNEL).history(limit=100):
             if not msg.reactions:
                 msgs.append(msg)
 
@@ -700,7 +700,7 @@ async def subs_check_msg(bot, ctx, masterlist):
                 f"**WARNING:** This album seems to have been discussed already on week {error_id}."
             )
         elif sub.warning == "duplicate":
-            channel = bot.get_channel(masterlist_channel_dict[sub.masterlist])
+            channel = bot.get_channel(MASTERLIST_CHANNEL_DICT[sub.masterlist])
             sub_msg = await channel.fetch_message(error_id)
             check_msg += (
                 "\n"
@@ -708,7 +708,7 @@ async def subs_check_msg(bot, ctx, masterlist):
                 f"Link to existing submission: <{sub_msg.jump_url}>."
             )
         elif sub.warning == "user already in masterlist":
-            channel = bot.get_channel(masterlist_channel_dict[sub.masterlist])
+            channel = bot.get_channel(MASTERLIST_CHANNEL_DICT[sub.masterlist])
             sub_msg = await channel.fetch_message(error_id)
             check_msg += (
                 "\n"
@@ -770,7 +770,7 @@ async def masterlist_sub_make(bot, post, masterlist):
 async def update_subs_sheet(bot, ctx, masterlist):
     # Pass all submissions from a masterlist to its corresponding sheet.
     await ctx.send(f"Updating {masterlist.upper()} sheet.")
-    subs_wks = subs_sheet.worksheet(masterlist.upper())
+    subs_wks = SUBS_SHEET.worksheet(masterlist.upper())
     subs_wks.clear()
     problem_subs = []
     subs_wks.append_row(
@@ -784,7 +784,7 @@ async def update_subs_sheet(bot, ctx, masterlist):
             "Message ID",
         ]
     )
-    async for msg in bot.get_channel(masterlist_channel_dict[masterlist]).history():
+    async for msg in bot.get_channel(MASTERLIST_CHANNEL_DICT[masterlist]).history():
         try:
             sub = await masterlist_sub_make(bot, msg.content, masterlist)
             subs_wks.append_row(
@@ -823,9 +823,9 @@ async def update_subs_sheet(bot, ctx, masterlist):
 async def sheet_to_masterlist(bot, ctx, masterlist):
     # Pass all submissions from a sheet to its corresponding masterlist.
     await ctx.send(f"Updating {masterlist.upper()} masterlist.")
-    channel = bot.get_channel(masterlist_channel_dict[masterlist])
+    channel = bot.get_channel(MASTERLIST_CHANNEL_DICT[masterlist])
     await channel.purge(limit=100)
-    subs_wks = subs_sheet.worksheet(masterlist.upper())
+    subs_wks = SUBS_SHEET.worksheet(masterlist.upper())
     albums = subs_wks.get_all_values()[1:]
     shuffle(albums)
     for album in albums:
