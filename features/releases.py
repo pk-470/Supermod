@@ -95,7 +95,9 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
 
     @commands.command(
         brief="Split the albums in this week's newsletter by genre category.",
-        description="Split the albums in this week's newsletter by genre category.",
+        description="Split the albums in this week's newsletter by genre category. "
+        "Add the word 'post' as an argument to post each genre newsletter in its "
+        "respective genre channel.",
     )
     async def news_by_genre(self, ctx, arg=None):
         sheet_data = NEWS_SHEET.sheet1.get_all_values()
