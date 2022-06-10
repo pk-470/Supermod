@@ -25,29 +25,10 @@ class Submission(Album):
             title,
             genres,
             release_date,
-            genre_categories=None,
-            countries=None,
-            length=None,
-            ffo=None,
         )
         self.submitter_name = submitter_name
         self.submitter_id = submitter_id
-        masterlist = remove_spaces(masterlist).lower()
-        try:
-            if masterlist.startswith("voted"):
-                self.masterlist = "voted"
-            elif masterlist.startswith("new"):
-                self.masterlist = "new"
-            elif masterlist.startswith("modern"):
-                self.masterlist = "modern"
-            elif masterlist.startswith("classic"):
-                self.masterlist = "classic"
-            elif masterlist.startswith("theme"):
-                self.masterlist = "theme"
-            else:
-                self.masterlist = "wrong/missing"
-        except:
-            self.masterlist = "wrong/missing"
+        self.masterlist = remove_spaces(masterlist).lower()
         self.message = message
         self.request = request
         self.warning = warning

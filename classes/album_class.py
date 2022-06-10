@@ -12,19 +12,11 @@ class Album:
         title,
         genres,
         release_date,
-        genre_categories=None,
-        countries=None,
-        length=None,
-        ffo=None,
     ):
         self.artist = make_title(artist)
         self.title = make_title(title)
         self.genres = handle_genres(genres)
-        self.genre_categories = handle_genre_categories(genre_categories)
-        self.length = handle_length(length)
         self.release_date = remove_spaces(release_date)
-        self.countries = handle_input(countries)
-        self.ffo = handle_input(ffo)
 
 
 def remove_spaces(string):
@@ -69,19 +61,6 @@ def handle_genres(genres):
                 genre = genre + " Metal"
 
         return genres
-
-
-def handle_genre_categories(genre_categories):
-    if genre_categories is None:
-        return None
-    else:
-        genre_categories = handle_input(genre_categories)
-        return [
-            genre_categories_dict[genre_category]
-            if genre_category in genre_categories_dict
-            else genre_category
-            for genre_category in genre_categories
-        ]
 
 
 def handle_length(length):
