@@ -75,7 +75,7 @@ class General(commands.Cog, description="General commands"):
             )
 
             await ctx.send(file=transcript_file)
-        except:
+        except commands.errors.MissingRequiredArgument:
             await ctx.send("Please specify a valid channel id.")
 
 
