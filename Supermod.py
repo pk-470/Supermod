@@ -69,9 +69,8 @@ class General(commands.Cog, description="General commands"):
             await ctx.send("Please specify a valid channel id.")
             return
 
-        try:
-            channel = self.bot.get_channel(int(channel_id))
-        except:
+        channel = self.bot.get_channel(int(channel_id))
+        if channel == None:
             await ctx.send("Please specify a valid channel id.")
             return
 
