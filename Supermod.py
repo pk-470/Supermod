@@ -65,18 +65,19 @@ class General(commands.Cog, description="General commands"):
         "(e.g. ,archive 123456789012345678).",
     )
     async def archive(self, ctx, channel_id):
-        try:
-            transcript = await chat_exporter.export(
-                self.bot.get_channel(channel_id), set_timezone="America/Toronto"
-            )
-            transcript_file = discord.File(
-                io.BytesIO(transcript.encode()),
-                filename=f"{self.bot.get_channel(channel_id).name}.html",
-            )
-
-            await ctx.send(file=transcript_file)
-        except commands.errors.MissingRequiredArgument:
+        if channel_id == None:
             await ctx.send("Please specify a valid channel id.")
+            return
+
+        transcript = await chat_exporter.export(
+            self.bot.get_channel(channel_id), set_timezone="America/Toronto"
+        )
+        transcript_file = discord.File(
+            io.BytesIO(transcript.encode()),
+            filename=f"{self.bot.get_channel(channel_id).name}.html",
+        )
+
+        await ctx.send(file=transcript_file)
 
 
 bot.add_cog(General(bot))
