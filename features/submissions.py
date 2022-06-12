@@ -206,7 +206,7 @@ class Album_Submissions(
 
         else:
             await ctx.send(
-                "You have 30 minutes to respond with on of:\n"
+                "You have 30 minutes to respond with one of:\n"
                 "· 'ok' in order to approve all submissions without errors or warnings;\n"
                 "· 'reject' followed by the numbers of the submissions you want to reject "
                 "(separated by ',');\n"

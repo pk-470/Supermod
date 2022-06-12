@@ -59,16 +59,24 @@ class General(commands.Cog, description="General commands"):
     async def hello(self, ctx):
         await ctx.send("It's fine now. Why? Because I am here!")
 
-    @commands.command(brief="Archive a channel.", description="Archive a channel.")
-    async def archive(self, ctx):
-        transcript = await chat_exporter.export(
-            ctx.channel, set_timezone="America/Toronto"
-        )
-        transcript_file = discord.File(
-            io.BytesIO(transcript.encode()), filename=f"{ctx.channel.name}.html"
-        )
+    @commands.command(
+        brief="Archive a channel from its channel id.",
+        description="Archive a channel from its channel id "
+        "(e.g. ,archive 123456789012345678).",
+    )
+    async def archive(self, ctx, channel_id):
+        try:
+            transcript = await chat_exporter.export(
+                self.bot.get_channel(channel_id), set_timezone="America/Toronto"
+            )
+            transcript_file = discord.File(
+                io.BytesIO(transcript.encode()),
+                filename=f"{self.bot.get_channel(channel_id).name}.html",
+            )
 
-        await ctx.send(file=transcript_file)
+            await ctx.send(file=transcript_file)
+        except:
+            await ctx.send("Please specify a valid channel id.")
 
 
 bot.add_cog(General(bot))
