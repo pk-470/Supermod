@@ -69,12 +69,16 @@ class General(commands.Cog, description="General commands"):
             await ctx.send("Please specify a valid channel id.")
             return
 
-        transcript = await chat_exporter.export(
-            self.bot.get_channel(channel_id), set_timezone="America/Toronto"
-        )
+        try:
+            channel = self.bot.get_channel(int(channel_id))
+        except:
+            await ctx.send("Please specify a valid channel id.")
+            return
+
+        transcript = await chat_exporter.export(channel, set_timezone="America/Toronto")
         transcript_file = discord.File(
             io.BytesIO(transcript.encode()),
-            filename=f"{self.bot.get_channel(channel_id).name}.html",
+            filename=f"{channel.name}.html",
         )
 
         await ctx.send(file=transcript_file)
