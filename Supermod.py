@@ -64,7 +64,7 @@ class General(commands.Cog, description="General commands"):
         description="Archive a channel from its channel id "
         "(e.g. ,archive 123456789012345678).",
     )
-    async def archive(self, ctx, channel_id):
+    async def archive(self, ctx, channel_id=None):
         if channel_id == None:
             await ctx.send("Please specify a valid channel id.")
             return
