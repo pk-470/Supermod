@@ -2,8 +2,8 @@
 import discord
 from discord.ext import commands
 
-# Libraries to load tokens
-from os import getenv, listdir
+# Tokens and filenames
+import os
 
 # Libraries for various functions
 import pendulum
@@ -29,7 +29,7 @@ if LOCAL_MODE == "ON":
 # Features to be loaded
 features = [
     filename[:-3]
-    for filename in listdir("./features")
+    for filename in os.listdir("./features")
     if filename.endswith(".py") and filename != "__init__.py"
 ]
 
@@ -87,4 +87,4 @@ bot.add_cog(General(bot))
 
 
 # Run bot
-bot.run(getenv("TOKEN"))
+bot.run(os.getenv("TOKEN"))

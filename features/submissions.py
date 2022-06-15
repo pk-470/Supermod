@@ -66,7 +66,7 @@ class Album_Submissions(
         self.bot = bot
         self.sheet_updating = False
         self.masterlist_updating = False
-        self.subs_sheet_update.start()
+        # self.subs_sheet_update.start()
 
     @tasks.loop(hours=12)
     async def subs_sheet_update(self):
