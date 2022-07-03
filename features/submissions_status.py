@@ -41,11 +41,6 @@ class Submissions_status(commands.Cog):
     @tasks.loop(minutes=1)
     async def submissions_status(self):
         time_now = pendulum.now("America/Toronto")
-        print(
-            "Submissions status loop is working ("
-            + time_now.strftime("%Y-%m-%d, %H:%M:%S EST")
-            + ")."
-        )
         if (
             time_now.strftime("%A") == SUBMISSIONS_OPEN_DAY
             and time_now.hour == SUBMISSIONS_OPEN_HOUR

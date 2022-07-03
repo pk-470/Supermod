@@ -77,24 +77,66 @@ class Album_Submissions(
             )
         self.sheet_updating = False
 
+    async def updating_check(self, ctx):
+        if self.sheet_updating:
+            await ctx.send("Submission sheets are currently updating. Try again later.")
+            return True
+
+        if self.masterlist_updating:
+            await ctx.send(
+                "Masterlist channels are currently updating. Try again later."
+            )
+            return True
+
+        return False
+
+    @commands.command(
+        brief="Search for your submissions.",
+        description="Search for your submissions. Optional argument: masterlist name.",
+    )
+    async def search_subs(self, ctx, masterlist=None):
+        if await self.updating_check(ctx):
+            return
+
+        async def retrieve_sub(ctx, masterlist):
+            wks = SUBS_SHEET.worksheet(masterlist.upper())
+            sub_cell = wks.find(f"{ctx.author.id}")
+            if sub_cell is None:
+                return f"{masterlist}: No submission."
+            sub_data = wks.row_values(sub_cell.row)
+            return f"{masterlist}: {sub_data[0]} by {sub_data[1]} ({sub_data[2]}) ({sub_data[3]})"
+
+        if masterlist == None:
+            await ctx.send(
+                f"<@!{ctx.author.id}> submissions:\n\n"
+                + "\n".join(
+                    [
+                        await retrieve_sub(ctx, masterlist.upper())
+                        for masterlist in MASTERLIST_CHANNEL_DICT
+                    ]
+                )
+            )
+        elif masterlist.lower() in MASTERLIST_CHANNEL_DICT:
+            await ctx.send(
+                f"<@!{ctx.author.id}> submission for {await retrieve_sub(ctx, masterlist.upper())}"
+            )
+        else:
+            ctx.send(
+                "Please provide a valid masterlist name, or no name if you wish"
+                "to see all your submissions."
+            )
+
     @commands.command(
         brief="Manually add a submission to a masterlist (for staff use only).",
         description="Manually add a submission to a masterlist (for staff use only). Use "
         "the usual submission format (i.e. Title // Artist // Year // Genre // Masterlist).",
     )
     async def submit(self, ctx):
-        if self.sheet_updating:
-            await ctx.send("Submission sheets are currently updating. Try again later.")
-            return
-
-        if self.masterlist_updating:
-            await ctx.send(
-                "Masterlist channels are currently updating. Try again later."
-            )
+        if await self.updating_check(ctx):
             return
 
         await ctx.send(
-            "You have 5 minutes to respond with your submission, "
+            "You ave 5 minutes to respond with your submission, "
             "or with 'stop' to stop the submission process."
         )
 
@@ -158,17 +200,10 @@ class Album_Submissions(
         "reject, or 'stop' to stop the process.",
     )
     async def subs(self, ctx, masterlist=None):
+        if await self.updating_check(ctx):
+            return
+
         # Check if an appropriate masterlist is chosen, otherwise prompt for one.
-        if self.sheet_updating:
-            await ctx.send("Submission sheets are currently updating. Try again later.")
-            return
-
-        if self.masterlist_updating:
-            await ctx.send(
-                "Masterlist channels are currently updating. Try again later."
-            )
-            return
-
         if masterlist is None:
             subs_dict = await subs_check_msg(self.bot, ctx, masterlist=None)
         elif masterlist.lower() in (
@@ -318,14 +353,7 @@ class Album_Submissions(
         "masterlist except 'voted'.",
     )
     async def get_random(self, ctx, masterlist=None):
-        if self.sheet_updating:
-            await ctx.send("Submission sheets are currently updating. Try again later.")
-            return
-
-        if self.masterlist_updating:
-            await ctx.send(
-                "Masterlist channels are currently updating. Try again later."
-            )
+        if await self.updating_check(ctx):
             return
 
         if masterlist is None:
@@ -346,14 +374,7 @@ class Album_Submissions(
         "If no masterlist is specified, the bot will update all sheets.",
     )
     async def update_sheet(self, ctx, masterlist=None):
-        if self.sheet_updating:
-            await ctx.send("Submission sheets are currently updating. Try again later.")
-            return
-
-        if self.masterlist_updating:
-            await ctx.send(
-                "Masterlist channels are currently updating. Try again later."
-            )
+        if await self.updating_check(ctx):
             return
 
         self.sheet_updating = True
@@ -378,14 +399,7 @@ class Album_Submissions(
         "If no masterlist is specified, the bot will update all masterlists.",
     )
     async def update_masterlist(self, ctx, masterlist=None):
-        if self.sheet_updating:
-            await ctx.send("Submission sheets are currently updating. Try again later.")
-            return
-
-        if self.masterlist_updating:
-            await ctx.send(
-                "Masterlist channels are currently updating. Try again later."
-            )
+        if await self.updating_check(ctx):
             return
 
         self.masterlist_updating = True
@@ -777,8 +791,8 @@ async def update_subs_sheet(bot, ctx, masterlist):
         [
             "Title",
             "Artist",
-            "Genre",
             "Year",
+            "Genre",
             "Submitter Name",
             "Submitter ID",
             "Message ID",
@@ -791,8 +805,8 @@ async def update_subs_sheet(bot, ctx, masterlist):
                 [
                     sub.title,
                     sub.artist,
-                    ", ".join(sub.genres),
                     sub.release_date,
+                    ", ".join(sub.genres),
                     sub.submitter_name,
                     f"{sub.submitter_id}",
                     f"{msg.id}",

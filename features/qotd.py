@@ -126,11 +126,6 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
     @tasks.loop(minutes=1)
     async def qotd_loop(self):
         time_now = pendulum.now("America/Toronto")
-        print(
-            "QOTD loop is working ("
-            + time_now.strftime("%Y-%m-%d, %H:%M:%S EST")
-            + ")."
-        )
         if time_now.hour == QOTD_HOUR and time_now.minute == QOTD_MINUTE:
             await qotd_interact(
                 self.bot, self.bot.get_channel(QOTD_APPROVAL_CHANNEL), timeout=1800

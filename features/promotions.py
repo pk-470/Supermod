@@ -142,11 +142,6 @@ class Promotions(
     @tasks.loop(minutes=60)
     async def ads_loop(self):
         time_now = pendulum.now("America/Toronto")
-        print(
-            "Promotions loop is working ("
-            + time_now.strftime("%Y-%m-%d, %H:%M:%S EST")
-            + ")."
-        )
         promos = PROMOS_WKS.get_all_values()[1:]
         for promo in promos:
             promo = [remove_spaces(i) for i in promo]
