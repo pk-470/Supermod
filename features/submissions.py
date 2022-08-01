@@ -136,7 +136,7 @@ class Album_Submissions(
             return
 
         await ctx.send(
-            "You ave 5 minutes to respond with your submission, "
+            "You have 5 minutes to respond with your submission, "
             "or with 'stop' to stop the submission process."
         )
 
