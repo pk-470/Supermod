@@ -130,7 +130,7 @@ def news_get(sheet_data, week):
             artist=release[0],
             title=release[1],
             genres=release[4],
-            genre_categories=release[13],
+            genre_categories=release[11],
             release_date=release[2],
             countries=release[6],
             length=release[3],
