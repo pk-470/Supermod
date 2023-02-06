@@ -9,6 +9,7 @@ def mode_setup():
     """
     Import data according to LOCAL_MODE status.
     """
+    LOCAL_MODE = open("mode_switch/mode_switch.txt", "r").read()
 
     if LOCAL_MODE == "ON":
 

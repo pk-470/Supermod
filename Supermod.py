@@ -3,8 +3,6 @@ from discord.ext.commands import Bot
 import os
 import pendulum
 
-from mode_switch import mode_setup
-
 
 intents = Intents.all()
 bot = Bot(command_prefix=",", case_insensitive=True, intents=intents)
@@ -30,11 +28,18 @@ async def on_ready():
 
 
 def run_bot(LOCAL_MODE):
+    print(
+        f"{pendulum.now('America/Toronto').strftime('%Y-%m-%d %H:%M:%S EST')}: "
+        f"Starting Supermod (LOCAL_MODE: {LOCAL_MODE})."
+    )
 
     with open("mode_switch/mode_switch.txt", "w") as switch:
         switch.write(LOCAL_MODE)
 
+    from mode_switch import mode_setup
+
     mode_setup()
+
     bot.run(os.getenv("TOKEN"))
 
 
