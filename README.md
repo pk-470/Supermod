@@ -2,7 +2,7 @@
 
 A bot handling various tasks for the Discord server "Omnivoracious Listeners".
 
-Version 3.2:
+Version 4.0:
 
 Finished features:
 
