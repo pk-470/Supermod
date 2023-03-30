@@ -113,7 +113,9 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
     )
     @commands.has_role(STAFF_ROLE)
     async def qotd_reset(self, ctx: commands.Context):
-        for i in range(len(QOTD_WKS.get_all_values())):
-            QOTD_WKS.update_cell(i + 1, 4, 0)
+        q_rows = QOTD_WKS.get_all_values()
+        for i, q_row in enumerate(q_rows):
+            if q_row[2]:
+                QOTD_WKS.update_cell(i + 1, 4, 0)
 
         await ctx.send("Number of uses for all questions set to 0.")
