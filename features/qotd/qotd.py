@@ -116,4 +116,4 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
         for i in range(len(QOTD_WKS.get_all_values())):
             QOTD_WKS.update_cell(i + 1, 4, 0)
 
-        ctx.send("Number of uses for all questions set to 0.")
+        await ctx.send("Number of uses for all questions set to 0.")
