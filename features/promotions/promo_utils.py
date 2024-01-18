@@ -1,8 +1,15 @@
+import pendulum
 from discord import Embed, Colour, TextChannel, Message
 from discord.ext.commands import Bot, Context
 
 from features.promotions.promo_constants import *
 from features.newsletter.news_utils import post_split, ordinal
+
+
+def print_info(message: str):
+    print(
+        f"{pendulum.now('America/Toronto').strftime('%Y-%m-%d %H:%M:%S EST')}: {message}"
+    )
 
 
 def promo_make(promo_data: list):

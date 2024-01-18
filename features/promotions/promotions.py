@@ -17,10 +17,7 @@ class Promotions(
         self.bot = bot
 
         if LOCAL_MODE == "ON":
-            print(
-                f"{pendulum.now('America/Toronto').strftime('%Y-%m-%d %H:%M:%S EST')}: "
-                + "Promotions loop will not start (LOCAL_MODE: ON)."
-            )
+            print_info("Promotions loop will not start (LOCAL_MODE: ON).")
         elif LOCAL_MODE == "OFF":
             self.promos_loop.start()
 

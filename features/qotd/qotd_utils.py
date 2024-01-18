@@ -3,6 +3,7 @@ from discord.ext.commands import Bot, Context
 import pendulum
 from random import choice
 
+from features.promotions.promo_utils import print_info
 from features.qotd.qotd_constants import *
 
 
@@ -93,7 +94,5 @@ async def qotd_post(question, bot: Bot, ctx: Context, overwrite=None):
         )
     mark_as_used(question)
     conf_msg = f"QOTD has been posted ({date_str})."
-    print(
-        f"{pendulum.now('America/Toronto').strftime('%Y-%m-%d %H:%M:%S EST')}: {conf_msg}"
-    )
+    print_info(conf_msg)
     await ctx.send(conf_msg)

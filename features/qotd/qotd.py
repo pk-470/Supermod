@@ -3,6 +3,7 @@ from discord.ext import commands, tasks
 from asyncio.exceptions import TimeoutError
 import pendulum
 
+from features.promotions.promo_utils import print_info
 from features.qotd.qotd_constants import *
 from features.qotd.qotd_utils import *
 from mode_switch import LOCAL_MODE
@@ -13,10 +14,7 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
         self.bot = bot
 
         if LOCAL_MODE == "ON":
-            print(
-                f"{pendulum.now('America/Toronto').strftime('%Y-%m-%d %H:%M:%S EST')}: "
-                + "QOTD loop will not start (LOCAL_MODE: ON)."
-            )
+            print_info("QOTD loop will not start (LOCAL_MODE: ON).")
         elif LOCAL_MODE == "OFF":
             self.qotd_loop.start()
 

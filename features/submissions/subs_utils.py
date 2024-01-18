@@ -1,7 +1,7 @@
-import pendulum
 from time import sleep
 from random import shuffle, choice
 
+from features.promotions.promo_utils import print_info
 from features.submissions.subs_constants import *
 from album_classes import Sub, Sub_error
 from features.newsletter.newsletter import post_split
@@ -391,10 +391,7 @@ async def update_subs_sheet(bot, ctx, masterlist):
     """
     Pass all submissions from a masterlist to its corresponding sheet.
     """
-    print(
-        f"{pendulum.now('America/Toronto').strftime('%Y-%m-%d %H:%M:%S EST')}: "
-        f"Updating {masterlist.upper()} sheet."
-    )
+    print_info(f"Updating {masterlist.upper()} sheet.")
     await ctx.send(f"Updating {masterlist.upper()} sheet.")
 
     subs_wks = SUBS_SHEET.worksheet(masterlist.upper())
@@ -429,10 +426,7 @@ async def update_subs_sheet(bot, ctx, masterlist):
         except:
             problem_subs.append(msg.jump_url)
 
-    print(
-        f"{pendulum.now('America/Toronto').strftime('%Y-%m-%d %H:%M:%S EST')}: "
-        f"{masterlist.upper()} sheet updated."
-    )
+    print_info(f"{masterlist.upper()} sheet updated.")
     await ctx.send(f"{masterlist.upper()} sheet updated.")
 
     if problem_subs:
@@ -450,10 +444,7 @@ async def sheet_to_masterlist(bot, ctx, masterlist):
     """
     Pass all submissions from a sheet to its corresponding masterlist.
     """
-    print(
-        f"{pendulum.now('America/Toronto').strftime('%Y-%m-%d %H:%M:%S EST')}: "
-        f"Updating {masterlist.upper()} masterlist."
-    )
+    print_info(f"Updating {masterlist.upper()} masterlist.")
 
     await ctx.send(f"Updating {masterlist.upper()} masterlist.")
 
@@ -476,10 +467,7 @@ async def sheet_to_masterlist(bot, ctx, masterlist):
 
         await channel.send(sub.masterlist_format())
 
-    print(
-        f"{pendulum.now('America/Toronto').strftime('%Y-%m-%d %H:%M:%S EST')}: "
-        f"{masterlist.upper()} masterlist has been updated in a random order."
-    )
+    print_info(f"{masterlist.upper()} masterlist has been updated in a random order.")
 
     await ctx.send(
         f"{masterlist.upper()} masterlist has been updated in a random order."
