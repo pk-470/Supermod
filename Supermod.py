@@ -1,9 +1,8 @@
 from discord import Intents
 from discord.ext.commands import Bot
 import os
-import pendulum
 
-from features.promotions.promo_utils import print_info
+from features.utils import *
 
 intents = Intents.all()
 bot = Bot(command_prefix=",", case_insensitive=True, intents=intents)
