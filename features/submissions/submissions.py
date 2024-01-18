@@ -19,7 +19,10 @@ class Submissions(
         self.masterlist_updating = False
 
         if LOCAL_MODE == "ON":
-            print("Submission sheets will not be updated (LOCAL_MODE: ON).")
+            print(
+                f"{pendulum.now('America/Toronto').strftime('%Y-%m-%d %H:%M:%S EST')}: "
+                + "Submission sheets will not be updated (LOCAL_MODE: ON)."
+            )
         elif LOCAL_MODE == "OFF":
             self.subs_sheet_update.start()
 

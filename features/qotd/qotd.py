@@ -13,7 +13,10 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
         self.bot = bot
 
         if LOCAL_MODE == "ON":
-            print("QOTD loop will not start (LOCAL_MODE: ON).")
+            print(
+                f"{pendulum.now('America/Toronto').strftime('%Y-%m-%d %H:%M:%S EST')}: "
+                + "QOTD loop will not start (LOCAL_MODE: ON)."
+            )
         elif LOCAL_MODE == "OFF":
             self.qotd_loop.start()
 

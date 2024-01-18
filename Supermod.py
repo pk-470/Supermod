@@ -44,4 +44,4 @@ def run_bot(LOCAL_MODE):
 
 
 if __name__ == "__main__":
-    run_bot(LOCAL_MODE="OFF")
+    run_bot(LOCAL_MODE="ON")
