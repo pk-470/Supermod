@@ -2,7 +2,7 @@ from discord.ext import commands, tasks
 from discord import Message
 from asyncio.exceptions import TimeoutError
 
-from features.utils import *
+from utils import *
 from features.submissions.subs_constants import *
 from features.submissions.subs_utils import *
 

@@ -3,7 +3,7 @@ from discord.ext import commands, tasks
 from asyncio.exceptions import TimeoutError
 import pendulum
 
-from features.utils import *
+from utils import *
 from features.qotd.qotd_constants import *
 from features.qotd.qotd_utils import *
 from mode_switch import LOCAL_MODE

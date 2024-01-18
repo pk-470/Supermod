@@ -1,7 +1,7 @@
 from discord.ext import commands, tasks
 import pendulum
 
-from features.utils import *
+from utils import *
 from features.promotions.promo_utils import *
 from album_classes.album import remove_spaces
 from mode_switch import LOCAL_MODE

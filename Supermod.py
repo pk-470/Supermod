@@ -2,7 +2,7 @@ from discord import Intents
 from discord.ext.commands import Bot
 import os
 
-from features.utils import *
+from utils import *
 
 intents = Intents.all()
 bot = Bot(command_prefix=",", case_insensitive=True, intents=intents)

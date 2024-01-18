@@ -1,7 +1,7 @@
 from time import sleep
 from random import shuffle, choice
 
-from features.utils import *
+from utils import *
 from features.submissions.subs_constants import *
 from album_classes import Sub, Sub_error
 from features.newsletter.newsletter import post_split

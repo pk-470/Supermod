@@ -3,7 +3,7 @@ from discord.ext.commands import Bot, Context
 import pendulum
 from random import choice
 
-from features.utils import *
+from utils import *
 from features.qotd.qotd_constants import *
 
 
