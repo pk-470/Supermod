@@ -20,20 +20,21 @@ class General(commands.Cog, description="General commands"):
     @commands.command(
         brief="Archive a channel from its channel id.",
         description="Archive a channel from its channel id "
-        "(e.g. ,archive 123456789012345678).",
+        "(e.g. ,archive 123456789012345678). If no channel id is given, "
+        "the current channel will be archived.",
     )
     @commands.has_role(STAFF_ROLE)
     async def archive(self, ctx: commands.Context, channel_id=None):
         if channel_id == None:
-            await ctx.send("Please specify a valid channel id.")
-            return
+            channel = ctx.channel
+        else:
+            channel = self.bot.get_channel(int(channel_id))
 
-        channel = self.bot.get_channel(int(channel_id))
         if channel == None:
             await ctx.send("Please specify a valid channel id.")
             return
 
-        transcript = await chat_exporter.export(channel, set_timezone="America/Toronto")
+        transcript = await chat_exporter.export(channel)
         transcript_file = discord.File(
             io.BytesIO(transcript.encode()),
             filename=f"{channel.name}.html",
