@@ -50,9 +50,9 @@ class Sub(Album):
     def sub_check_msg_full(self):
         return (
             f"Album: **{self.masterlist_format_no_mention()}**, "
-            f"submitted by **{self.submitter_name}** ({self.submitter_id}), "
-            f"request: **{self.request}** in **{self.masterlist.upper()}**, "
-            f"link: {self.link}"
+            + f"submitted by **{self.submitter_name}** ({self.submitter_id}), "
+            + f"request: **{self.request}** in **{self.masterlist.upper()}**, "
+            + f"link: {self.link}"
         )
 
 

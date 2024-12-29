@@ -16,7 +16,7 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
 
         if LOCAL_MODE == "ON":
             print_info("QOTD loop will not start (LOCAL_MODE: ON).")
-        elif LOCAL_MODE == "OFF":
+        else:
             self.qotd_loop.start()
 
     @tasks.loop(minutes=1)
@@ -30,8 +30,8 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
     @commands.command(
         brief="Fetch a QOTD.",
         description="Fetch a QOTD. React with a green checkmark to post the question and "
-        "mark it as used, with a red X to reject the question, and with E to post an "
-        "edited version of the question and mark the original as used.",
+        + "mark it as used, with a red X to reject the question, and with E to post an "
+        + "edited version of the question and mark the original as used.",
     )
     @commands.has_role(STAFF_ROLE)
     async def qotd(self, ctx: commands.Context):
@@ -53,14 +53,14 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
             if response.content.lower() == "stop":
                 await ctx.send("The QOTD submission process has stopped.")
                 return
-            elif response.content.lower()[0] == "q":
+            if response.content.lower()[0] == "q":
                 qotd_type = "Question"
             elif response.content.lower()[0] == "a":
                 qotd_type = "Activity"
             else:
                 await ctx.send(
                     f"I don't know what you mean by '{response.content}'. "
-                    "Please start the QOTD submission process again."
+                    + "Please start the QOTD submission process again."
                 )
                 return
             await ctx.send("Repeatable (Yes / No):")
@@ -68,7 +68,7 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
             if response.content.lower() == "stop":
                 await ctx.send("The QOTD submission process has stopped.")
                 return
-            elif response.content.lower()[0] == "y":
+            if response.content.lower()[0] == "y":
                 repeatable = "Y"
                 repeatable_long = "repeatable"
             elif response.content.lower()[0] == "n":
@@ -77,7 +77,7 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
             else:
                 await ctx.send(
                     f"I don't know what you mean by '{response.content}'. "
-                    "Please start the QOTD submission process again."
+                    + "Please start the QOTD submission process again."
                 )
                 return
             await ctx.send("QOTD content:")
@@ -85,11 +85,10 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
             if response.content.lower() == "stop":
                 await ctx.send("The QOTD submission process has stopped.")
                 return
-            else:
-                qotd = response.content
+            qotd = response.content
             await ctx.send(
                 f"The {qotd_type.lower()} '{qotd}' ({repeatable_long}) "
-                "will be added to the spreadsheet. Do you want to submit (y/n)?"
+                + "will be added to the spreadsheet. Do you want to submit (y/n)?"
             )
             response = await self.bot.wait_for("message", timeout=30, check=check)
             if response.content.lower()[0] == "y":
@@ -100,13 +99,14 @@ class QOTD(commands.Cog, description="Submit and retrieve a QOTD."):
             else:
                 await ctx.send(
                     f"I don't know what you mean by '{response.content}'. "
-                    "Please start the QOTD submission process again."
+                    + "Please start the QOTD submission process again."
                 )
                 return
 
         except TimeoutError:
             await ctx.send("Time has run out.")
-        except:
+        except Exception as e:
+            print_info(e)
             await ctx.send("Something went wrong. Please try again.")
 
     @commands.command(

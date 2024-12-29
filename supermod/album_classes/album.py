@@ -42,20 +42,20 @@ class Album:
         length = length.strip()
         if length == "Live":
             return "Live Album"
-        elif length == "Other":
+        if length == "Other":
             return "Other Release"
-        elif length == "Deluxe":
+        if length == "Deluxe":
             return "Deluxe Edition"
-        elif length == "Greatest Hits":
+        if length == "Greatest Hits":
             return "Greatest Hits Album"
-        elif length == "Cover":
+        if length == "Cover":
             return "Cover Album"
-        elif length == "Covers":
+        if length == "Covers":
             return "Cover Album"
-        elif length == "Covers Album":
+        if length == "Covers Album":
             return "Cover Album"
-        elif length == "Anniversary":
+        if length == "Anniversary":
             return "Anniversary Edition"
-        elif length == "Unreleased":
+        if length == "Unreleased":
             return "Unreleased Album"
         return length

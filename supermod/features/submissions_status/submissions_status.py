@@ -19,11 +19,16 @@ class SubmissionsStatus(commands.Cog):
             and time_now.minute == SUBMISSIONS_OPEN_MINUTE
         ):
             await self.bot.get_channel(ANNOUNCEMENTS_CHANNEL).send(
-                f"Hello {LISTENERS_ROLE_MENTION}. "
-                f"{self.bot.get_channel(SUBMISSIONS_CHANNEL).mention} is now open."
+                f"Hello {LISTENERS_ROLE_MENTION}! "
+                + "Voting has closed and our new weekly picks are now available in the Albums Under Review category, "
+                + f"located below {self.bot.get_channel(OL_WEEKLY_PLAYLIST_CHANNEL).mention}."
+                + f"When you have listened to an album in full, head to {self.bot.get_channel(INPUT_RATINGS_HERE_CHANNEL).mention} "
+                + "and submit your score. "
+                + f"Check the {self.bot.get_channel(FAQS_CHANNEL).mention} and the individual channel descriptions, "
+                + f"or head to {self.bot.get_channel(TALK_TO_THE_STAFF_CHANNEL).mention} if you need further assistance."
             )
             print(
-                '"Submissions is open" message has been posted (date: '
+                "'Submissions is open' message has been posted (date: "
                 + time_now.strftime("%Y-%m-%d")
                 + ")."
             )
@@ -33,18 +38,14 @@ class SubmissionsStatus(commands.Cog):
             and time_now.minute == SUBMISSIONS_CLOSED_MINUTE
         ):
             await self.bot.get_channel(ANNOUNCEMENTS_CHANNEL).send(
-                f"Hello {LISTENERS_ROLE_MENTION}. "
-                f"{self.bot.get_channel(SUBMISSIONS_CHANNEL).mention} is now closed and voting is open.\n"
-                f"Go to the {self.bot.get_channel(VOTED_CHANNEL).mention} and use any of the :thumbs up: emoji "
-                "on the album you would like to select, and our voting bot (Ultimate Polling) will send you "
-                "a confirmation via DM. You may vote 10 times, max of 1 time per album.\n"
-                "Good luck choosing!\n\n"
-                "Use %help for a full list of commands for Ultimate Polling.\n\n"
-                "*Note: If voting reactions are still not enabled an hour after this message, "
-                f"then you should bring it up in* {self.bot.get_channel(TALK_TO_THE_STAFF_CHANNEL).mention}."
+                f"Hello {LISTENERS_ROLE_MENTION}! "
+                + f"{self.bot.get_channel(SUBMISSIONS_CHANNEL).mention} is now closed and voting is open. "
+                + f"Head to {self.bot.get_channel(VOTED_CHANNEL).mention} where you can vote up to 10 albums "
+                + "using the :thumbs up: emoji. The winning album will be revealed along with the random picks "
+                + "during the upcoming weekend and will be reviewed next week."
             )
             print(
-                '"Submissions is closed" message has been posted (date: '
+                "'Submissions is closed' message has been posted (date: "
                 + time_now.strftime("%Y-%m-%d")
                 + ")."
             )

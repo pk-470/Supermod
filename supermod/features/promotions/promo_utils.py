@@ -54,14 +54,14 @@ async def promo_add_interaction(bot: Bot, ctx: Context) -> None:
     if response.content.lower() == "stop":
         await ctx.send("The promo submission process has stopped.")
         return
-    elif response.content.lower()[0] == "c":
+    if response.content.lower()[0] == "c":
         embed = "Yes"
     elif response.content.lower()[0] == "p":
         embed = "No"
     else:
         await ctx.send(
             f"I don't know what you mean by '{response.content}'. "
-            "Please start the promo submission process again."
+            + "Please start the promo submission process again."
         )
         return
     new_promo_data.extend([response.content.capitalize(), embed])
@@ -110,7 +110,7 @@ async def promo_add_interaction(bot: Bot, ctx: Context) -> None:
     new_promo_formatted = promo_make(new_promo_data)
     await ctx.send(
         f"The new promo will appear every {new_date[0]} {ordinal(int(new_date[0]))} "
-        f"day of each month at {new_date[1]} as follows:"
+        + f"day of each month at {new_date[1]} as follows:"
     )
     await promo_post(new_promo_formatted, ctx)
 
@@ -125,6 +125,6 @@ async def promo_add_interaction(bot: Bot, ctx: Context) -> None:
     else:
         await ctx.send(
             f"I don't know what you mean by '{response.content}'. "
-            "Please start the promo submission process again."
+            + "Please start the promo submission process again."
         )
         return

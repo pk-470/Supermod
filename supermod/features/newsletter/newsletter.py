@@ -14,8 +14,8 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
     @commands.command(
         brief="Fetch a newsletter from any week (1/1/2021 onwards).",
         description="Fetch the newsletter from a particular week from 1/1/2021 onwards "
-        "(optional argument: date in M/D/YYYY format). If date is missing, the current "
-        "week's newsletter is returned.",
+        + "(optional argument: date in M/D/YYYY format). If date is missing, the current "
+        + "week's newsletter is returned.",
     )
     async def news(self, ctx: commands.Context, date_str: Optional[str] = None):
         if date_str is None:
@@ -28,7 +28,8 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
                         "The OL Newsletter only contains albums released in 2021 or later."
                     )
                     return
-            except:
+            except Exception as e:
+                print_info(e)
                 await ctx.send(
                     "Please make sure your date is in the correct format (M/D/YYYY)."
                 )
@@ -49,13 +50,13 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
         if ending_message is None:
             await ctx.send(
                 "To add a message to this week's official newsletter, "
-                "write it after the 'news_full' command (e.g. news_full 'message')."
+                + "write it after the 'news_full' command (e.g. news_full 'message')."
             )
             return
-        else:
-            date = pendulum.now("America/Toronto")
-            sheet_data = NEWS_SHEET.sheet1.get_all_values()
-            await newsletter_post(ctx, sheet_data, date, ending_message)
+
+        date = pendulum.now("America/Toronto")
+        sheet_data = NEWS_SHEET.sheet1.get_all_values()
+        await newsletter_post(ctx, sheet_data, date, ending_message)
 
     @commands.command(
         brief="Add a message to this week's official newsletter and format it for reddit.",
@@ -68,34 +69,35 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
         if ending_message is None:
             await ctx.send(
                 "To add a message to this week's official newsletter, "
-                "write it after the 'news_full' command (e.g. news_full 'message')."
+                + "write it after the 'news_full' command (e.g. news_full 'message')."
             )
             return
-        else:
-            date = pendulum.now("America/Toronto")
-            sheet_data = NEWS_SHEET.sheet1.get_all_values()
-            await newsletter_post(
-                ctx,
-                sheet_data,
-                date,
-                ending_message,
-                double_spacing=True,
-                contribute_message=False,
-                discord_invite=True,
-            )
+
+        date = pendulum.now("America/Toronto")
+        sheet_data = NEWS_SHEET.sheet1.get_all_values()
+        await newsletter_post(
+            ctx,
+            sheet_data,
+            date,
+            ending_message,
+            double_spacing=True,
+            contribute_message=False,
+            spreadsheet_link=False,
+            discord_invite=True,
+        )
 
     @commands.command(
         brief="Split the albums in this week's newsletter by genre category.",
         description="Split the albums in this week's newsletter by genre category. "
-        "Add the word 'post' as an argument to post each genre newsletter in its "
-        "respective genre channel.",
+        + "Add the word 'post' as an argument to post each genre newsletter in its "
+        + "respective genre channel.",
     )
     @commands.has_role(STAFF_ROLE)
     async def news_by_genre(self, ctx: commands.Context, arg: Optional[str] = None):
         sheet_data = NEWS_SHEET.sheet1.get_all_values()
         genre_categories_posts, errors_message = news_by_genre(sheet_data)
-        for genre_category in genre_categories_posts:
-            posts = post_split(genre_categories_posts[genre_category], 2000)
+        for genre_category, long_post in genre_categories_posts.items():
+            posts = post_split(long_post, 2000)
             for post in posts:
                 if arg == "post":
                     await self.bot.get_channel(GENRE_CHANNELS[genre_category]).send(

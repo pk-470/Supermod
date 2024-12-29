@@ -1,4 +1,5 @@
 import random
+from typing import Optional
 
 import pendulum
 from discord import Message, Reaction, User
@@ -31,9 +32,9 @@ async def qotd_interact(bot: Bot, ctx: Context, timeout):
         elif str(reaction.emoji) == "🇪":
             await ctx.send(
                 f"Respond with an edited version of the {question[0].lower()} "
-                f"which I will post instead (I will mark the original {question[0].lower()} "
-                "as used in the spreadsheet without changing its template). "
-                "Respond with 'stop' if you want me to stop waiting for a response."
+                + f"which I will post instead (I will mark the original {question[0].lower()} "
+                + "as used in the spreadsheet without changing its template). "
+                + "Respond with 'stop' if you want me to stop waiting for a response."
             )
 
             def check_author(response: Message):
@@ -94,12 +95,12 @@ async def qotd_post(
     if overwrite is None:
         await bot.get_channel(QOTD_CHANNEL).send(
             f"__**{question[0].capitalize()} of the Day {date_str}:**__"
-            f"\n\n{question[2]}"
+            + f"\n\n{question[2]}"
         )
     else:
         await bot.get_channel(QOTD_CHANNEL).send(
             f"__**{question[0].capitalize()} of the Day {date_str}:**__"
-            f"\n\n{overwrite}"
+            + f"\n\n{overwrite}"
         )
     mark_as_used(question)
     conf_msg = f"QOTD has been posted ({date_str})."

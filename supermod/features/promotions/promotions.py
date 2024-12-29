@@ -17,7 +17,7 @@ class Promotions(
 
         if LOCAL_MODE == "ON":
             print_info("Promotions loop will not start (LOCAL_MODE: ON).")
-        elif LOCAL_MODE == "OFF":
+        else:
             self.promos_loop.start()
 
     @tasks.loop(minutes=60)
@@ -43,7 +43,7 @@ class Promotions(
                         post_in_channel = REJECTED_PROMOS_CHANNEL
                         await self.bot.get_channel(REJECTED_PROMOS_CHANNEL).send(
                             "The following promo will not be posted because I can't "
-                            "find at least one of its related members in the server:"
+                            + "find at least one of its related members in the server:"
                         )
                     promo_formatted = promo_make(promo_as_list)
                     channel = self.bot.get_channel(post_in_channel)
@@ -63,5 +63,6 @@ class Promotions(
             await promo_add_interaction(self.bot, ctx)
         except TimeoutError:
             await ctx.send("Time has run out.")
-        except:
+        except Exception as e:
+            print_info(e)
             await ctx.send("Something went wrong. Please try again.")

@@ -1,5 +1,6 @@
 from random import choice, shuffle
 from time import sleep
+from typing import Optional
 
 from discord import Message
 from discord.ext.commands import Bot, Context
@@ -12,9 +13,10 @@ from .subs_constants import *
 
 def msgs_by_index(
     response: Message, subs_dict: dict[str, Sub | SubError]
-) -> tuple[list[str], list[Optional[Message]]]:
+) -> tuple[list[str], list[Message]]:
     resp_content = response.content.split(",")
     sub_indices = []
+    sub_msgs = []
     for thing in resp_content:
         ind = ""
         for char in thing:
@@ -22,8 +24,11 @@ def msgs_by_index(
                 ind += char
 
         sub_indices.append(ind)
+        msg = subs_dict[ind].message
+        assert msg is not None
+        sub_msgs.append(msg)
 
-    return sub_indices, [subs_dict[ind].message for ind in sub_indices]
+    return sub_indices, sub_msgs
 
 
 async def random_album(ctx: Context, masterlist: str) -> None:
@@ -384,20 +389,20 @@ async def masterlist_sub_make(bot: Bot, post: str, masterlist: str) -> Sub:
     Create a submission from a formatted submission message in a masterlist.
     Input a string (NOT A DISCORD MESSAGE).
     """
-    post_split = post.split("_by_")
-    sub_data = [post_split[0]]
-    post_split = post_split[1].split("(", 1)
-    sub_data.append(post_split[0])
-    post_split = post_split[1].split(")", 1)
-    sub_data.append(post_split[0])
-    post_split = post_split[1][2:].split(")")
-    sub_data.append(post_split[0])
-    id = ""
-    for i in post_split[1]:
+    post_split_list = post.split("_by_")
+    sub_data = [post_split_list[0]]
+    post_split_list = post_split_list[1].split("(", 1)
+    sub_data.append(post_split_list[0])
+    post_split_list = post_split_list[1].split(")", 1)
+    sub_data.append(post_split_list[0])
+    post_split_list = post_split_list[1][2:].split(")")
+    sub_data.append(post_split_list[0])
+    sub_id = ""
+    for i in post_split_list[1]:
         if i.isnumeric():
-            id += i
-    sub_data.append(id)
-    user = await bot.fetch_user(int(id))
+            sub_id += i
+    sub_data.append(sub_id)
+    user = await bot.fetch_user(int(sub_id))
     sub_data.append(user.display_name)
 
     sub_album = Sub(
@@ -450,7 +455,8 @@ async def update_subs_sheet(bot: Bot, ctx: Context, masterlist: str) -> None:
                 ]
             )
             sleep(1)
-        except:
+        except Exception as e:
+            print_info(e)
             problem_subs.append(msg.jump_url)
 
     print_info(f"{masterlist.upper()} sheet updated.")

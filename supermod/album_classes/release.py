@@ -2,6 +2,7 @@ from typing import Optional
 
 from ..data.discord_country_flags import DISCORD_COUNTRY_FLAGS
 from ..data.genres import GENRE_CATEGORIES
+from ..utils import print_info
 from .album import Album
 
 
@@ -54,9 +55,10 @@ class Release(Album):
                 + ", ".join(self.genres)
                 + ")"
             )
-        except:
+        except Exception as e:
+            print_info(e)
             return (
                 f"**ERROR:** Something went wrong with album {self.title} by "
-                f"{self.artist} from {self.countries} (Genre: {self.genres}, "
-                f"Release date: {self.release_date})."
+                + f"{self.artist} from {self.countries} (Genre: {self.genres}, "
+                + f"Release date: {self.release_date})."
             )

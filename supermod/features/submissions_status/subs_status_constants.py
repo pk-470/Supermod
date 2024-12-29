@@ -7,6 +7,9 @@ ANNOUNCEMENTS_CHANNEL = int(get_and_verify_env("ANNOUNCEMENTS_CHANNEL"))
 SUBMISSIONS_CHANNEL = int(get_and_verify_env("SUBMISSIONS_CHANNEL"))
 VOTED_CHANNEL = int(get_and_verify_env("VOTED_CHANNEL"))
 TALK_TO_THE_STAFF_CHANNEL = int(get_and_verify_env("TALK_TO_THE_STAFF_CHANNEL"))
+OL_WEEKLY_PLAYLIST_CHANNEL = int(get_and_verify_env("OL_WEEKLY_PLAYLIST_CHANNEL"))
+INPUT_RATINGS_HERE_CHANNEL = int(get_and_verify_env("INPUT_RATINGS_HERE_CHANNEL"))
+FAQS_CHANNEL = int(get_and_verify_env("FAQS_CHANNEL"))
 
 LISTENERS_ROLE_MENTION = "<@&" + str(get_and_verify_env("LISTENERS_ROLE")) + ">"
 

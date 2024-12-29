@@ -1,4 +1,5 @@
-from asyncio.exceptions import TimeoutError
+from asyncio.exceptions import TimeoutError  # pylint: disable=redefined-builtin
+from typing import Optional
 
 from discord import Message
 from discord.ext import commands, tasks
@@ -21,7 +22,7 @@ class Submissions(
 
         if LOCAL_MODE == "ON":
             print_info("Submission sheets will not be updated (LOCAL_MODE: ON).")
-        elif LOCAL_MODE == "OFF":
+        else:
             self.subs_sheet_update.start()
 
     @tasks.loop(hours=12)
@@ -85,7 +86,7 @@ class Submissions(
     @commands.command(
         brief="Manually add a submission to a masterlist (for staff use only).",
         description="Manually add a submission to a masterlist (for staff use only). Use "
-        "the usual submission format (i.e. Title // Artist // Year // Genre // Masterlist).",
+        + "the usual submission format (i.e. Title // Artist // Year // Genre // Masterlist).",
     )
     @commands.has_role(STAFF_ROLE)
     async def submit(self, ctx: commands.Context):
@@ -94,7 +95,7 @@ class Submissions(
 
         await ctx.send(
             "You have 5 minutes to respond with your submission, "
-            "or with 'stop' to stop the submission process."
+            + "or with 'stop' to stop the submission process."
         )
 
         def check(resp: Message):
@@ -130,31 +131,32 @@ class Submissions(
                 sub_msg = await channel.fetch_message(error_id)
                 await ctx.send(
                     f"**WARNING:** This album seems to be in {sub.masterlist.upper()} already. "
-                    f"Link to existing submission: <{sub_msg.jump_url}>."
+                    + f"Link to existing submission: <{sub_msg.jump_url}>."
                 )
             elif sub.warning == "user already in masterlist":
                 channel = self.bot.get_channel(MASTERLIST_CHANNEL_DICT[sub.masterlist])
                 sub_msg = await channel.fetch_message(error_id)
                 await ctx.send(
                     f"**WARNING:** You seem to have a submission in {sub.masterlist.upper()} already. "
-                    f"Link to existing submission: <{sub_msg.jump_url}>."
+                    + f"Link to existing submission: <{sub_msg.jump_url}>."
                 )
             else:
                 await submit_album(self.bot, sub)
         except TimeoutError:
             await ctx.send("Time has run out.")
-        except:
+        except Exception as e:
+            print_info(e)
             await ctx.send("Something went wrong. Please try again.")
 
     @commands.command(
         brief="Fetch and approve or reject submissions for the masterlists.",
         description="Fetch and approve or reject submissions for the masterlists. "
         "Optional argument: masterlist name (i.e. one of 'voted', 'new', 'modern', 'classic', 'theme', 'anything') "
-        "to only fetch submissions for that masterlist, or 'error' to fetch messages in #submissions "
-        "which cannot be correctly interpreted as a submission by the bot. "
-        "Once the submissions have been fetched, you have 20 minutes to respond with 'ok' in order "
-        "to approve all submissions, 'reject' followed by the numbers of the submissions you want to "
-        "reject, or 'stop' to stop the process.",
+        + "to only fetch submissions for that masterlist, or 'error' to fetch messages in #submissions "
+        + "which cannot be correctly interpreted as a submission by the bot. "
+        + "Once the submissions have been fetched, you have 20 minutes to respond with 'ok' in order "
+        + "to approve all submissions, 'reject' followed by the numbers of the submissions you want to "
+        + "reject, or 'stop' to stop the process.",
     )
     @commands.has_role(STAFF_ROLE)
     async def subs(self, ctx: commands.Context, masterlist: Optional[str] = None):
@@ -172,8 +174,8 @@ class Submissions(
         else:
             await ctx.send(
                 "Please provide a valid masterlist, or 'error' if you want to fetch all "
-                "new submissions with errors, or no masterlist if you want to fetch all "
-                "new submissions from all lists (including those with errors)."
+                + "new submissions with errors, or no masterlist if you want to fetch all "
+                + "new submissions from all lists (including those with errors)."
             )
 
             return
@@ -184,23 +186,23 @@ class Submissions(
         if masterlist == "halted":
             await ctx.send(
                 "You have 30 minutes to respond with one of:\n"
-                "· 'ok' in order to approve all submissions without errors or warnings;\n"
-                "· 'reject' followed by the numbers of the submissions you want to reject "
-                "(separated by ',');\n"
-                "· 'unhalt' followed by the numbers of the submissions you want to unhalt "
-                "(separated by ',');\n"
-                "· 'stop' in order to stop the process."
+                + "· 'ok' in order to approve all submissions without errors or warnings;\n"
+                + "· 'reject' followed by the numbers of the submissions you want to reject "
+                + "(separated by ',');\n"
+                + "· 'unhalt' followed by the numbers of the submissions you want to unhalt "
+                + "(separated by ',');\n"
+                + "· 'stop' in order to stop the process."
             )
 
         else:
             await ctx.send(
                 "You have 30 minutes to respond with one of:\n"
-                "· 'ok' in order to approve all submissions without errors or warnings;\n"
-                "· 'reject' followed by the numbers of the submissions you want to reject "
-                "(separated by ',');\n"
-                "· 'halt' followed by the numbers of the submissions you want to halt "
-                "for later consideration (separated by ',');\n"
-                "· 'stop' in order to stop the process."
+                + "· 'ok' in order to approve all submissions without errors or warnings;\n"
+                + "· 'reject' followed by the numbers of the submissions you want to reject "
+                + "(separated by ',');\n"
+                + "· 'halt' followed by the numbers of the submissions you want to halt "
+                + "for later consideration (separated by ',');\n"
+                + "· 'stop' in order to stop the process."
             )
 
         # Submission checking options
@@ -216,7 +218,7 @@ class Submissions(
                 return
 
             # Approve submissions
-            elif response.content.lower().startswith("ok"):
+            if response.content.lower().startswith("ok"):
                 if masterlist == "error":
                     await ctx.send(
                         "I can't add submissions with errors to the masterlist."
@@ -224,6 +226,7 @@ class Submissions(
                 elif masterlist == "halted":
                     for _, sub in list(subs_dict.items()):
                         if isinstance(sub, Sub) and sub.warning is None:
+                            assert sub.message is not None
                             await sub.message.clear_reaction("🇭")
                             await submit_album(self.bot, sub)
                     await ctx.send(
@@ -290,20 +293,21 @@ class Submissions(
             else:
                 await ctx.send(
                     f"I don't know what you mean by '{response.content}'. "
-                    "Please start the submissions approval process again."
+                    + "Please start the submissions approval process again."
                 )
 
         except TimeoutError:
             await ctx.send("Time has run out.")
-        except:
+        except Exception as e:
+            print_info(e)
             await ctx.send("Something went wrong. Please try again.")
 
     @commands.command(
         brief="Choose a random album from a masterlist.",
         description="Choose a random album from a masterlist. Optional argument: "
-        "masterlist name (i.e. one of 'voted', 'new', 'modern', 'classic', 'theme', 'anything'). "
-        "If no masterlist is specified, the bot will get a random album from every "
-        "masterlist except 'voted'.",
+        + "masterlist name (i.e. one of 'voted', 'new', 'modern', 'classic', 'theme', 'anything'). "
+        + "If no masterlist is specified, the bot will get a random album from every "
+        + "masterlist except 'voted'.",
     )
     @commands.has_role(STAFF_ROLE)
     async def get_random(self, ctx: commands.Context, masterlist: Optional[str] = None):
@@ -311,21 +315,21 @@ class Submissions(
             return
 
         if masterlist is None:
-            for masterlist in list(MASTERLIST_CHANNEL_DICT)[1:]:
-                await random_album(ctx, masterlist)
+            for mlist in list(MASTERLIST_CHANNEL_DICT)[1:]:
+                await random_album(ctx, mlist)
         elif masterlist.lower() in MASTERLIST_CHANNEL_DICT:
             await random_album(ctx, masterlist)
         else:
             await ctx.send(
                 "Please provide a valid masterlist name, or no name if you wish"
-                "to get a random album from every masterlist (except 'voted')."
+                + "to get a random album from every masterlist (except 'voted')."
             )
 
     @commands.command(
         brief="Pass all submissions from a masterlist to its corresponding google sheet.",
         description="Pass all submissions from a masterlist to its corresponding google sheet. "
-        "Optional argument: masterlist name (i.e. one of 'voted', 'new', 'modern', 'classic', 'theme', 'anything'). "
-        "If no masterlist is specified, the bot will update all sheets.",
+        + "Optional argument: masterlist name (i.e. one of 'voted', 'new', 'modern', 'classic', 'theme', 'anything'). "
+        + "If no masterlist is specified, the bot will update all sheets.",
     )
     @commands.has_role(STAFF_ROLE)
     async def update_sheet(
@@ -337,14 +341,14 @@ class Submissions(
         self.sheet_updating = True
 
         if masterlist is None:
-            for masterlist in MASTERLIST_CHANNEL_DICT:
-                await update_subs_sheet(self.bot, ctx, masterlist)
+            for mlist in MASTERLIST_CHANNEL_DICT:
+                await update_subs_sheet(self.bot, ctx, mlist)
         elif masterlist.lower() in MASTERLIST_CHANNEL_DICT:
             await update_subs_sheet(self.bot, ctx, masterlist.lower())
         else:
             await ctx.send(
                 "Please provide a valid masterlist name, or no name if you wish to update "
-                "all masterlists from the sheet data."
+                + "all masterlists from the sheet data."
             )
 
         self.sheet_updating = False
@@ -353,7 +357,7 @@ class Submissions(
         brief="Pass all submissions from a sheet to its corresponding masterlist in a random order.",
         description="Pass all submissions from a sheet to its corresponding masterlist in a random order. "
         "Optional argument: masterlist name (i.e. one of 'voted', 'new', 'modern', 'classic', 'theme', 'anything'). "
-        "If no masterlist is specified, the bot will update all masterlists.",
+        + "If no masterlist is specified, the bot will update all masterlists.",
     )
     @commands.has_role(STAFF_ROLE)
     async def update_masterlist(
@@ -365,16 +369,16 @@ class Submissions(
         self.masterlist_updating = True
 
         if masterlist is None:
-            for masterlist in MASTERLIST_CHANNEL_DICT:
-                await sheet_to_masterlist(self.bot, ctx, masterlist)
-                await update_subs_sheet(self.bot, ctx, masterlist)
+            for mlist in MASTERLIST_CHANNEL_DICT:
+                await sheet_to_masterlist(self.bot, ctx, mlist)
+                await update_subs_sheet(self.bot, ctx, mlist)
         elif masterlist.lower() in MASTERLIST_CHANNEL_DICT:
             await sheet_to_masterlist(self.bot, ctx, masterlist.lower())
             await update_subs_sheet(self.bot, ctx, masterlist.lower())
         else:
             await ctx.send(
                 "Please provide a valid masterlist name, or no name if you wish to update "
-                "all masterlists from the sheet data."
+                + "all masterlists from the sheet data."
             )
 
         self.masterlist_updating = False

@@ -1,18 +1,18 @@
-from os import getenv
-
 import gspread
 
 from ..paths import MODE_SWITCH_PATH, TOKENS_PATH
 from ..utils import get_and_verify_env
 
-LOCAL_MODE = open(MODE_SWITCH_PATH, "r").read()
+with open(MODE_SWITCH_PATH, "r", encoding="utf-8") as f:
+    LOCAL_MODE = f.read()
 
 
 def mode_setup():
     """
     Import data according to LOCAL_MODE status.
     """
-    LOCAL_MODE = open(MODE_SWITCH_PATH, "r").read()
+    with open(MODE_SWITCH_PATH, "r", encoding="utf-8") as f:
+        LOCAL_MODE = f.read()
 
     if LOCAL_MODE == "ON":
 
@@ -22,7 +22,7 @@ def mode_setup():
 
         gsa = gspread.service_account(f"{TOKENS_PATH}/service_account.json")
 
-    elif LOCAL_MODE == "OFF":
+    else:
 
         from json import loads
 

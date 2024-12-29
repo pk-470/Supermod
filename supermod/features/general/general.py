@@ -22,8 +22,8 @@ class General(commands.Cog, description="General commands"):
     @commands.command(
         brief="Archive a channel from its channel id.",
         description="Archive a channel from its channel id "
-        "(e.g. ,archive 123456789012345678). If no channel id is given, "
-        "the current channel will be archived.",
+        + "(e.g. ,archive 123456789012345678). If no channel id is given, "
+        + "the current channel will be archived.",
     )
     @commands.has_role(STAFF_ROLE)
     async def archive(

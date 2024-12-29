@@ -1,4 +1,3 @@
-from os import getenv
 from typing import Optional
 
 import pendulum
@@ -6,6 +5,7 @@ from discord.ext.commands import Context
 from pendulum.datetime import DateTime
 
 from ...album_classes import Release
+from ...utils import get_and_verify_env, print_info
 
 
 def news_get(sheet_data: list[list[str]], week: int) -> list[Release]:
@@ -59,12 +59,8 @@ def split_by_length(
     spacing = "\n\n" if double_spacing else "\n"
     news_message = f"{spacing}{spacing}".join(
         [
-            f"__*New {plural(length)}:*__"
-            f"{spacing}"
-            + f"{spacing}".join(
-                [release_formatted for release_formatted in releases_by_length[length]]
-            )
-            for length in releases_by_length
+            f"__*New {plural(length)}:*__{spacing}" + spacing.join(releases)
+            for length, releases in releases_by_length.items()
         ]
     )
 
@@ -77,6 +73,7 @@ def newsletter_create(
     ending_message: Optional[str] = None,
     double_spacing: bool = False,
     contribute_message: bool = True,
+    spreadsheet_link: bool = True,
     discord_invite: bool = False,
 ) -> tuple[list[str], str]:
     title_day, week = end_of_week(date)
@@ -89,8 +86,7 @@ def newsletter_create(
     spacing = "\n\n" if double_spacing else "\n"
     post_main = (
         f"**__Omnivoracious Listeners New Music Newsletter (Week of {month} {day_ordinal}):__**"
-        f"{spacing}{spacing}"
-        f"{news_message}"
+        + f"{spacing}{spacing}{news_message}"
     )
     if ending_message is None:
         post_full = post_main
@@ -98,6 +94,8 @@ def newsletter_create(
         post_full = f"{post_main}{spacing}{spacing}{ending_message}"
     if contribute_message:
         post_full += f"{spacing}{spacing}Feel free to contribute to our ever-growing newsletter by a DM to Seffial!"
+    if spreadsheet_link:
+        post_full += spacing + get_and_verify_env("NEWS_SHEET_URL")
     if discord_invite:
         post_full += f"{spacing}{spacing}https://discord.com/invite/atDujWqf9P"
     post_full += f"{spacing}{spacing}Happy Listening!"
@@ -147,8 +145,8 @@ def news_by_genre(sheet_data: list[list[str]]) -> tuple[dict[str, str], str]:
 
     genre_categories_posts: dict[str, str] = {}
     all_errors = []
-    for genre_category in albums_by_genre_category:
-        news_message, errors = split_by_length(albums_by_genre_category[genre_category])
+    for genre_category, releases in albums_by_genre_category.items():
+        news_message, errors = split_by_length(releases)
 
         # Title variables
         month = title_day.strftime("%B")
@@ -156,8 +154,7 @@ def news_by_genre(sheet_data: list[list[str]]) -> tuple[dict[str, str], str]:
 
         genre_categories_posts[genre_category] = (
             f"**__Stuff you might be into this week ({month} {day_ordinal}) ({genre_category}):__**"
-            "\n\n"
-            f"{news_message}"
+            + f"\n\n{news_message}"
         )
         all_errors.extend([error for error in errors if error not in all_errors])
 
@@ -211,9 +208,9 @@ def week_check(value: str, week: int):
     try:
         if week_no(pendulum.from_format(value, "M/D/YYYY")) == week:
             return True
-        else:
-            return False
-    except:
+        return False
+    except Exception as e:
+        print_info(e)
         return False
 
 
@@ -221,19 +218,17 @@ def week_check(value: str, week: int):
 def ordinal(num: int) -> str:
     if num in (1, 21, 31):
         return "st"
-    elif num in (2, 22):
+    if num in (2, 22):
         return "nd"
-    elif num in (3, 23):
+    if num in (3, 23):
         return "rd"
-    else:
-        return "th"
+    return "th"
 
 
 def plural(string: str) -> str:
     if string[-1] in ("s", "x", "z") or string[-2:] in ("sh", "ch"):
         return f"{string}es"
-    else:
-        return f"{string}s"
+    return f"{string}s"
 
 
 def day_trim(day: str) -> str:
