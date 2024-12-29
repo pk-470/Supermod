@@ -265,5 +265,5 @@ DISCORD_COUNTRY_FLAGS = {
     "South Africa": ":flag_za:",
     "Zambia": ":flag_zm:",
     "Zimbabwe": ":flag_zw:",
-    "Globe": ":earth_americas:",
+    "International": ":globe_with_meridians:",
 }

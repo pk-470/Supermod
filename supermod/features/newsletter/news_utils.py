@@ -33,7 +33,9 @@ def news_get(sheet_data: list[list[str]], week: int) -> list[Release]:
     return releases
 
 
-def split_by_length(releases: list[Release]) -> tuple[str, list[str]]:
+def split_by_length(
+    releases: list[Release], double_spacing: bool = False
+) -> tuple[str, list[str]]:
     """
     Organise albums by length in the newsletter. Returns a string with
     with all the albums organised and a list with possible errors.
@@ -54,11 +56,12 @@ def split_by_length(releases: list[Release]) -> tuple[str, list[str]]:
         releases_by_length.pop("LP")
     if not releases_by_length["EP"]:
         releases_by_length.pop("EP")
-    news_message = "\n\n".join(
+    spacing = "\n\n" if double_spacing else "\n"
+    news_message = f"{spacing}{spacing}".join(
         [
             f"__*New {plural(length)}:*__"
-            "\n"
-            + "\n".join(
+            f"{spacing}"
+            + f"{spacing}".join(
                 [release_formatted for release_formatted in releases_by_length[length]]
             )
             for length in releases_by_length
@@ -69,38 +72,35 @@ def split_by_length(releases: list[Release]) -> tuple[str, list[str]]:
 
 
 def newsletter_create(
-    sheet_data: list[list[str]], date: DateTime, ending_message: Optional[str] = None
+    sheet_data: list[list[str]],
+    date: DateTime,
+    ending_message: Optional[str] = None,
+    double_spacing: bool = False,
+    contribute_message: bool = True,
+    discord_invite: bool = False,
 ) -> tuple[list[str], str]:
     title_day, week = end_of_week(date)
     albums = news_get(sheet_data, week)
-    news_message, errors = split_by_length(albums)
+    news_message, errors = split_by_length(albums, double_spacing=double_spacing)
 
     # Title variables
     month = title_day.strftime("%B")
     day_ordinal = day_trim(title_day.strftime("%d")) + ordinal(title_day.day)
-
+    spacing = "\n\n" if double_spacing else "\n"
     post_main = (
         f"**__Omnivoracious Listeners New Music Newsletter (Week of {month} {day_ordinal}):__**"
-        "\n\n"
+        f"{spacing}{spacing}"
         f"{news_message}"
     )
-
     if ending_message is None:
         post_full = post_main
     else:
-        post_full = (
-            f"{post_main}"
-            "\n\n"
-            f"{ending_message}"
-            "\n"
-            f"<{getenv('NEWS_SHEET_URL')}>"
-            "\n\n"
-            "Feel free to contribute to our ever-growing newsletter:"
-            "\n"
-            f"<{getenv('NEWS_FORM_URL')}>"
-            "\n\n"
-            "Happy Listening!"
-        )
+        post_full = f"{post_main}{spacing}{spacing}{ending_message}"
+    if contribute_message:
+        post_full += f"{spacing}{spacing}Feel free to contribute to our ever-growing newsletter by a DM to Seffial!"
+    if discord_invite:
+        post_full += f"{spacing}{spacing}https://discord.com/invite/atDujWqf9P"
+    post_full += f"{spacing}{spacing}Happy Listening!"
 
     posts = post_split(post_full, 2000)
 
@@ -117,8 +117,11 @@ async def newsletter_post(
     sheet_data: list[list[str]],
     date: DateTime,
     ending_message: Optional[str] = None,
+    **kwargs,
 ) -> None:
-    posts, errors_message = newsletter_create(sheet_data, date, ending_message)
+    posts, errors_message = newsletter_create(
+        sheet_data, date, ending_message, **kwargs
+    )
     for post in posts:
         await ctx.send(post)
     if errors_message:

@@ -58,6 +58,33 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
             await newsletter_post(ctx, sheet_data, date, ending_message)
 
     @commands.command(
+        brief="Add a message to this week's official newsletter and format it for reddit.",
+        description="Add a message to this week's official newsletter and format it for reddit. (argument: message).",
+    )
+    @commands.has_role(STAFF_ROLE)
+    async def news_full_reddit(
+        self, ctx: commands.Context, *, ending_message: Optional[str] = None
+    ):
+        if ending_message is None:
+            await ctx.send(
+                "To add a message to this week's official newsletter, "
+                "write it after the 'news_full' command (e.g. news_full 'message')."
+            )
+            return
+        else:
+            date = pendulum.now("America/Toronto")
+            sheet_data = NEWS_SHEET.sheet1.get_all_values()
+            await newsletter_post(
+                ctx,
+                sheet_data,
+                date,
+                ending_message,
+                double_spacing=True,
+                contribute_message=False,
+                discord_invite=True,
+            )
+
+    @commands.command(
         brief="Split the albums in this week's newsletter by genre category.",
         description="Split the albums in this week's newsletter by genre category. "
         "Add the word 'post' as an argument to post each genre newsletter in its "
