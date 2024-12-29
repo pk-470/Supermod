@@ -1,1 +1,1 @@
-worker: python Supermod.py
+worker: python run_bot.py
