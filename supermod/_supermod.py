@@ -18,7 +18,7 @@ class Supermod(Bot):
             filename for filename in os.listdir(FEATURES_PATH) if filename[0] != "_"
         ]
         for feature in features:
-            await self.load_extension(f".features.{feature}")
+            await self.load_extension(FEATURES_PATH.replace("/", ".") + f".{feature}")
             print_info(f"Feature {feature} has been loaded.")
 
     def run_bot(self, LOCAL_MODE: str):
