@@ -1,1 +1,1 @@
-from .supermod import Supermod
+from ._supermod import Supermod
