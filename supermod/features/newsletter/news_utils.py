@@ -1,7 +1,6 @@
 from typing import Optional
 
 import pendulum
-from discord.ext.commands import Context
 from pendulum.datetime import DateTime
 
 from ...album_classes import Release
@@ -108,22 +107,6 @@ def newsletter_create(
         errors_message = ""
 
     return posts, errors_message
-
-
-async def newsletter_post(
-    ctx: Context,
-    sheet_data: list[list[str]],
-    date: DateTime,
-    ending_message: Optional[str] = None,
-    **kwargs,
-) -> None:
-    posts, errors_message = newsletter_create(
-        sheet_data, date, ending_message, **kwargs
-    )
-    for post in posts:
-        await ctx.send(post)
-    if errors_message:
-        await ctx.send(errors_message)
 
 
 def news_by_genre(sheet_data: list[list[str]]) -> tuple[dict[str, str], str]:

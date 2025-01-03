@@ -2,13 +2,14 @@ from typing import Optional
 
 import pendulum
 from discord.ext import commands
+from discord.ext.commands import Bot, Cog, Context
 
 from .news_constants import *
 from .news_utils import *
 
 
-class Newsletter(commands.Cog, description="Functions to fetch the weekly newsletter."):
-    def __init__(self, bot: commands.Bot):
+class Newsletter(Cog, description="Functions to fetch the weekly newsletter."):
+    def __init__(self, bot: Bot):
         self.bot = bot
 
     @commands.command(
@@ -17,7 +18,7 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
         + "(optional argument: date in M/D/YYYY format). If date is missing, the current "
         + "week's newsletter is returned.",
     )
-    async def news(self, ctx: commands.Context, date_str: Optional[str] = None):
+    async def news(self, ctx: Context, date_str: Optional[str] = None):
         if date_str is None:
             date = pendulum.now("America/Toronto")
         else:
@@ -37,16 +38,14 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
 
         sheet = f"{date.year} OL Rock Albums List"
         sheet_data = NEWS_SHEET.worksheet(sheet).get_all_values()
-        await newsletter_post(ctx, sheet_data, date)
+        await self._newsletter_post(ctx, sheet_data, date)
 
     @commands.command(
         brief="Add a message to this week's official newsletter.",
         description="Add a message to this week's official newsletter (argument: message).",
     )
     @commands.has_role(STAFF_ROLE)
-    async def news_full(
-        self, ctx: commands.Context, *, ending_message: Optional[str] = None
-    ):
+    async def news_full(self, ctx: Context, *, ending_message: Optional[str] = None):
         if ending_message is None:
             await ctx.send(
                 "To add a message to this week's official newsletter, "
@@ -56,7 +55,7 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
 
         date = pendulum.now("America/Toronto")
         sheet_data = NEWS_SHEET.sheet1.get_all_values()
-        await newsletter_post(ctx, sheet_data, date, ending_message)
+        await self._newsletter_post(ctx, sheet_data, date, ending_message)
 
     @commands.command(
         brief="Add a message to this week's official newsletter and format it for reddit.",
@@ -64,7 +63,7 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
     )
     @commands.has_role(STAFF_ROLE)
     async def news_full_reddit(
-        self, ctx: commands.Context, *, ending_message: Optional[str] = None
+        self, ctx: Context, *, ending_message: Optional[str] = None
     ):
         if ending_message is None:
             await ctx.send(
@@ -75,7 +74,7 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
 
         date = pendulum.now("America/Toronto")
         sheet_data = NEWS_SHEET.sheet1.get_all_values()
-        await newsletter_post(
+        await self._newsletter_post(
             ctx,
             sheet_data,
             date,
@@ -93,7 +92,7 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
         + "respective genre channel.",
     )
     @commands.has_role(STAFF_ROLE)
-    async def news_by_genre(self, ctx: commands.Context, arg: Optional[str] = None):
+    async def news_by_genre(self, ctx: Context, arg: Optional[str] = None):
         sheet_data = NEWS_SHEET.sheet1.get_all_values()
         genre_categories_posts, errors_message = news_by_genre(sheet_data)
         for genre_category, long_post in genre_categories_posts.items():
@@ -109,5 +108,21 @@ class Newsletter(commands.Cog, description="Functions to fetch the weekly newsle
             await ctx.send(
                 "The genre newsletters have been posted in their respective channels."
             )
+        if errors_message:
+            await ctx.send(errors_message)
+
+    async def _newsletter_post(
+        self,
+        ctx: Context,
+        sheet_data: list[list[str]],
+        date: DateTime,
+        ending_message: Optional[str] = None,
+        **kwargs,
+    ) -> None:
+        posts, errors_message = newsletter_create(
+            sheet_data, date, ending_message, **kwargs
+        )
+        for post in posts:
+            await ctx.send(post)
         if errors_message:
             await ctx.send(errors_message)

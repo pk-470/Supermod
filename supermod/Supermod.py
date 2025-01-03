@@ -1,3 +1,5 @@
+# pylint: disable=redefined-outer-name,import-outside-toplevel
+
 import os
 
 from discord import Intents
@@ -6,35 +8,29 @@ from discord.ext.commands import Bot
 from .paths import *
 from .utils import *
 
-intents = Intents.all()
-bot = Bot(command_prefix=",", case_insensitive=True, intents=intents)
 
+class Supermod(Bot):
+    def __init__(self, intents: Intents):
+        super().__init__(command_prefix=",", case_insensitive=True, intents=intents)
 
-async def load_features():
-    features = [
-        filename for filename in os.listdir(FEATURES_PATH) if filename[0] != "_"
-    ]
-    for feature in features:
-        await bot.load_extension(f"supermod.features.{feature}")
-        print_info(f"Feature {feature} has been loaded.")
+    async def load_features(self) -> None:
+        features = [
+            filename for filename in os.listdir(FEATURES_PATH) if filename[0] != "_"
+        ]
+        for feature in features:
+            await self.load_extension(f".features.{feature}")
+            print_info(f"Feature {feature} has been loaded.")
 
+    def run_bot(self, LOCAL_MODE: str):
+        print_info(f"Starting Supermod (LOCAL_MODE: {LOCAL_MODE}).")
 
-@bot.event
-async def on_ready():
-    print_info(f"I am logged in as {bot.user}.")
-    await load_features()
+        with open(MODE_SWITCH_PATH, "w", encoding="utf-8") as switch:
+            switch.write(LOCAL_MODE)
 
+        from .mode_switch import mode_setup
 
-def run_bot(LOCAL_MODE: str):
-    print_info(f"Starting Supermod (LOCAL_MODE: {LOCAL_MODE}).")
+        mode_setup()
 
-    with open(MODE_SWITCH_PATH, "w", encoding="utf-8") as switch:
-        switch.write(LOCAL_MODE)
-
-    from supermod.mode_switch import mode_setup
-
-    mode_setup()
-
-    token = os.getenv("TOKEN")
-    assert token is not None
-    bot.run(token)
+        token = os.getenv("TOKEN")
+        assert token is not None
+        self.run(token)

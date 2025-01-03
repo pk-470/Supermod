@@ -1,11 +1,12 @@
 import pendulum
-from discord.ext import commands, tasks
+from discord.ext import tasks
+from discord.ext.commands import Bot, Cog
 
 from .subs_status_constants import *
 
 
-class SubmissionsStatus(commands.Cog):
-    def __init__(self, bot: commands.Bot):
+class SubmissionsStatus(Cog):
+    def __init__(self, bot: Bot):
         self.bot = bot
         self.submissions_status.start()
 
@@ -41,7 +42,7 @@ class SubmissionsStatus(commands.Cog):
                 f"Hello {LISTENERS_ROLE_MENTION}! "
                 + f"{self.bot.get_channel(SUBMISSIONS_CHANNEL).mention} is now closed and voting is open. "
                 + f"Head to {self.bot.get_channel(VOTED_CHANNEL).mention} where you can vote up to 10 albums "
-                + "using the :thumbs up: emoji. The winning album will be revealed along with the random picks "
+                + "using the :thumbsup: emoji. The winning album will be revealed along with the random picks "
                 + "during the upcoming weekend and will be reviewed next week."
             )
             print(

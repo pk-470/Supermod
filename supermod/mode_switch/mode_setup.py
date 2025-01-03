@@ -1,3 +1,5 @@
+# pylint: disable=redefined-outer-name,import-outside-toplevel
+
 import gspread
 
 from ..paths import MODE_SWITCH_PATH, TOKENS_PATH
@@ -20,13 +22,13 @@ def mode_setup():
 
         load_dotenv(f"{TOKENS_PATH}/.env")
 
-        gsa = gspread.service_account(f"{TOKENS_PATH}/service_account.json")
+        gsa = gspread.service_account(f"{TOKENS_PATH}/service_account.json")  # type: ignore[reportPrivateImportUsage]
 
     else:
 
         from json import loads
 
-        gsa = gspread.service_account_from_dict(
+        gsa = gspread.service_account_from_dict(  # type: ignore[reportPrivateImportUsage]
             loads(get_and_verify_env("SERVICE_ACCOUNT_CRED"))
         )
 
