@@ -1,10 +1,7 @@
-from discord import Intents
-
 from supermod import Supermod
 from supermod.utils import print_info
 
-intents = Intents.all()
-SUPERMOD = Supermod(intents)
+SUPERMOD = Supermod()
 
 
 @SUPERMOD.event

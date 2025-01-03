@@ -10,7 +10,8 @@ from .utils import *
 
 
 class Supermod(Bot):
-    def __init__(self, intents: Intents):
+    def __init__(self):
+        intents = Intents.all()
         super().__init__(command_prefix=",", case_insensitive=True, intents=intents)
 
     async def load_features(self) -> None:
