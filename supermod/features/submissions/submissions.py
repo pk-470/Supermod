@@ -38,25 +38,12 @@ class Submissions(
             )
         self.sheet_updating = False
 
-    async def updating_check(self, ctx: Context):
-        if self.sheet_updating:
-            await ctx.send("Submission sheets are currently updating. Try again later.")
-            return True
-
-        if self.masterlist_updating:
-            await ctx.send(
-                "Masterlist channels are currently updating. Try again later."
-            )
-            return True
-
-        return False
-
     @commands.command(
         brief="Search for your submissions.",
         description="Search for your submissions. Optional argument: masterlist name.",
     )
     async def my_subs(self, ctx: Context, masterlist: Optional[str] = None):
-        if await self.updating_check(ctx):
+        if await self._updating_check(ctx):
             return
 
         async def retrieve_sub(ctx: Context, masterlist: str):
@@ -94,7 +81,7 @@ class Submissions(
     )
     @commands.has_role(STAFF_ROLE)
     async def submit(self, ctx: Context):
-        if await self.updating_check(ctx):
+        if await self._updating_check(ctx):
             return
 
         await ctx.send(
@@ -164,7 +151,7 @@ class Submissions(
     )
     @commands.has_role(STAFF_ROLE)
     async def subs(self, ctx: Context, masterlist: Optional[str] = None):
-        if await self.updating_check(ctx):
+        if await self._updating_check(ctx):
             return
 
         # Check if an appropriate masterlist is chosen, otherwise prompt for one.
@@ -315,11 +302,13 @@ class Submissions(
     )
     @commands.has_role(STAFF_ROLE)
     async def get_random(self, ctx: Context, masterlist: Optional[str] = None):
-        if await self.updating_check(ctx):
+        if await self._updating_check(ctx):
             return
 
         if masterlist is None:
-            for mlist in list(MASTERLIST_CHANNEL_DICT)[1:]:
+            for mlist in [
+                key for key in MASTERLIST_CHANNEL_DICT.keys() if key != "voted"
+            ]:
                 sub = random_album(mlist)
                 await ctx.send(f"{mlist.upper()} choice: {sub.masterlist_format()}")
         elif masterlist.lower() in MASTERLIST_CHANNEL_DICT:
@@ -339,7 +328,7 @@ class Submissions(
     )
     @commands.has_role(STAFF_ROLE)
     async def update_sheet(self, ctx: Context, masterlist: Optional[str] = None):
-        if await self.updating_check(ctx):
+        if await self._updating_check(ctx):
             return
 
         self.sheet_updating = True
@@ -365,7 +354,7 @@ class Submissions(
     )
     @commands.has_role(STAFF_ROLE)
     async def update_masterlist(self, ctx: Context, masterlist: Optional[str] = None):
-        if await self.updating_check(ctx):
+        if await self._updating_check(ctx):
             return
 
         self.masterlist_updating = True
@@ -384,6 +373,19 @@ class Submissions(
             )
 
         self.masterlist_updating = False
+
+    async def _updating_check(self, ctx: Context):
+        if self.sheet_updating:
+            await ctx.send("Submission sheets are currently updating. Try again later.")
+            return True
+
+        if self.masterlist_updating:
+            await ctx.send(
+                "Masterlist channels are currently updating. Try again later."
+            )
+            return True
+
+        return False
 
     async def _submit_album(self, sub: Sub):
         """

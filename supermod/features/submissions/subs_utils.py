@@ -102,7 +102,7 @@ def discussed_check(
         value = cell.value
         assert value is not None
         return True, int(value)
-    except AssertionError:
+    except (ValueError, AssertionError):
         return False, 0
 
 
@@ -119,7 +119,7 @@ def duplicate_check(
         value = cell.value
         assert value is not None
         return True, int(value)
-    except AssertionError:
+    except (ValueError, AssertionError):
         return False, 0
 
 
@@ -136,7 +136,7 @@ def user_already_in_masterlist_check(
         value = cell.value
         assert value is not None
         return True, int(value)
-    except AssertionError:
+    except (ValueError, AssertionError):
         return False, 0
 
 
