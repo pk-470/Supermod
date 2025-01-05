@@ -56,7 +56,7 @@ class Release(Album):
                 + ")"
             )
         except Exception as e:
-            print_info(e)
+            print_info(f"{type(e).__name__}: {e}")
             return (
                 f"**ERROR:** Something went wrong with album {self.title} by "
                 + f"{self.artist} from {self.countries} (Genre: {self.genres}, "

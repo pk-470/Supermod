@@ -195,7 +195,7 @@ def submission_make(msg: Message) -> Sub | SubError:
             request=request,
         )
     except Exception as e:
-        print_info(e)
+        print_info(f"{type(e).__name__}: {e}")
         sub_album = SubError(message=msg)
 
     return sub_album

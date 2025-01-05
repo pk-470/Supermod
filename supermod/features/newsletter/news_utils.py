@@ -193,7 +193,7 @@ def week_check(value: str, week: int):
             return True
         return False
     except Exception as e:
-        print_info(e)
+        print_info(f"{type(e).__name__}: {e}")
         return False
 
 

@@ -68,7 +68,7 @@ class Promotions(
         except TimeoutError:
             await ctx.send("Time has run out.")
         except Exception as e:
-            print_info(e)
+            print_info(f"{type(e).__name__}: {e}")
             await ctx.send("Something went wrong. Please try again.")
 
     async def _promo_post(

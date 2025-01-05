@@ -108,7 +108,7 @@ class QOTD(Cog, description="Submit and retrieve a QOTD."):
         except TimeoutError:
             await ctx.send("Time has run out.")
         except Exception as e:
-            print_info(e)
+            print_info(f"{type(e).__name__}: {e}")
             await ctx.send("Something went wrong. Please try again.")
 
     @commands.command(

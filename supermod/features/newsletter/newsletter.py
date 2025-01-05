@@ -30,7 +30,7 @@ class Newsletter(Cog, description="Functions to fetch the weekly newsletter."):
                     )
                     return
             except Exception as e:
-                print_info(e)
+                print_info(f"{type(e).__name__}: {e}")
                 await ctx.send(
                     "Please make sure your date is in the correct format (M/D/YYYY)."
                 )
