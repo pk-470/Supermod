@@ -55,8 +55,8 @@ The bot runs as a worker dyno (`Procfile`: `worker: python main.py`) on the
 To migrate an existing app from an older stack and deploy:
 
 ```bash
-heroku stack:set heroku-24 -a YOUR_APP_NAME   # point at the Heroku-24 stack
-git push heroku main                          # rebuild is required for the stack change
-heroku ps -a YOUR_APP_NAME                    # ensure the worker is running
-heroku logs --tail -a YOUR_APP_NAME
+heroku stack:set heroku-24 -a super-mod    # point at the Heroku-24 stack
+git push heroku main                       # rebuild is required for the stack change
+heroku ps -a super-mod                     # ensure the worker is running
+heroku logs --tail -a super-mod
 ```

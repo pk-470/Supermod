@@ -1,9 +1,9 @@
-from supermod._mode_setup import mode_setup
+from functools import lru_cache
+
+from supermod._mode_setup import load_local_env, mode_setup
 from supermod._utils import get_and_verify_env
 
-gsa = mode_setup()
-
-NEWS_SHEET = gsa.open_by_url(get_and_verify_env("NEWS_SHEET_URL"))
+load_local_env()
 
 GENRE_CHANNELS = {
     "Experimental Rock": int(get_and_verify_env("EXPERIMENTAL_ROCK")),
@@ -20,3 +20,9 @@ GENRE_CHANNELS = {
 }
 
 STAFF_ROLE = int(get_and_verify_env("STAFF_ROLE"))
+
+
+@lru_cache(maxsize=1)
+def news_sheet():
+    """Lazily open and memoize the newsletter spreadsheet."""
+    return mode_setup().open_by_url(get_and_verify_env("NEWS_SHEET_URL"))

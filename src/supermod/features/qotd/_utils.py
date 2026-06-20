@@ -5,7 +5,7 @@ from supermod.features.qotd._constants import *
 
 
 def qotd_get() -> Optional[list[str]]:
-    questions: list[list[str]] = QOTD_WKS.get_all_values()
+    questions: list[list[str]] = qotd_wks().get_all_values()
     questions = [
         question
         for question in questions
@@ -19,8 +19,9 @@ def qotd_get() -> Optional[list[str]]:
 
 
 def mark_as_used(question: list[str]) -> None:
-    cell = QOTD_WKS.find(question[2])
+    wks = qotd_wks()
+    cell = wks.find(question[2])
     assert cell is not None
     question_row = cell.row
-    current = QOTD_WKS.cell(question_row, 4).numeric_value or 0
-    QOTD_WKS.update_cell(question_row, 4, int(current) + 1)
+    current = wks.cell(question_row, 4).numeric_value or 0
+    wks.update_cell(question_row, 4, int(current) + 1)

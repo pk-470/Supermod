@@ -1,10 +1,9 @@
-from supermod._mode_setup import mode_setup
+from functools import lru_cache
+
+from supermod._mode_setup import load_local_env, mode_setup
 from supermod._utils import get_and_verify_env
 
-gsa = mode_setup()
-
-ALBUMS_WKS = gsa.open_by_url(get_and_verify_env("ALBUMS_SHEET_URL")).sheet1
-SUBS_SHEET = gsa.open_by_url(get_and_verify_env("SUBS_SHEET_URL"))
+load_local_env()
 
 SUB_APPROVAL_CHANNEL = int(get_and_verify_env("QOTD_APPROVAL_CHANNEL"))
 
@@ -26,3 +25,15 @@ MASTERLIST_CHANNEL_DICT = {
 }
 
 STAFF_ROLE = int(get_and_verify_env("STAFF_ROLE"))
+
+
+@lru_cache(maxsize=1)
+def albums_wks():
+    """Lazily open and memoize the discussed-albums worksheet."""
+    return mode_setup().open_by_url(get_and_verify_env("ALBUMS_SHEET_URL")).sheet1
+
+
+@lru_cache(maxsize=1)
+def subs_sheet():
+    """Lazily open and memoize the submissions spreadsheet."""
+    return mode_setup().open_by_url(get_and_verify_env("SUBS_SHEET_URL"))

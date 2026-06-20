@@ -1,4 +1,4 @@
-"""Smoke tests: prove pure modules import and the fake-_constants trick works."""
+"""Smoke tests: prove pure feature modules import with no network at import time."""
 
 
 def test_album_imports():
@@ -14,8 +14,9 @@ def test_album_imports():
 
 
 def test_feature_utils_imports_without_gspread():
-    # If conftest's fake _constants registration failed, importing feature
-    # code would run gspread.open_by_url and blow up here.
+    # If the env-based _constants or the lazy worksheet accessors regressed to
+    # network-on-import, importing feature code would call gspread.open_by_url
+    # and blow up here.
     from supermod.features.newsletter import _utils
 
     assert _utils is not None

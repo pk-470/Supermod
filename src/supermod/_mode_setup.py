@@ -10,7 +10,8 @@ from supermod._utils import get_and_verify_env
 def is_local() -> bool:
     """
     Return True in local development, detected by a gitignored .local marker
-    file at the project root (so deployment is always in production mode)."""
+    file at the project root (so deployment is always in production mode).
+    """
     return LOCAL_MARKER.exists()
 
 
@@ -18,7 +19,8 @@ def is_local() -> bool:
 def load_local_env() -> None:
     """
     In local mode, load secrets from .tokens/.env into the environment once;
-    a no-op in deployment, where configuration comes from real env variables."""
+    a no-op in deployment, where configuration comes from real env variables.
+    """
     if is_local():
         from dotenv import load_dotenv
 
@@ -31,13 +33,11 @@ def mode_setup():
     load_local_env()
 
     if is_local():
-        gsa = gspread.service_account(  # type: ignore[reportPrivateImportUsage]
-            str(TOKENS_PATH / "service_account.json")
-        )
+        gsa = gspread.service_account(str(TOKENS_PATH / "service_account.json"))
     else:
         from json import loads
 
-        gsa = gspread.service_account_from_dict(  # type: ignore[reportPrivateImportUsage]
+        gsa = gspread.service_account_from_dict(
             loads(get_and_verify_env("SERVICE_ACCOUNT_CRED"))
         )
 

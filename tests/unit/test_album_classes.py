@@ -1,6 +1,7 @@
 """Unit tests for supermod.album_classes (album.py, release.py, sub.py)."""
 
 import urllib.parse as url
+from typing import Any
 
 import pytest
 
@@ -107,7 +108,7 @@ def test_handle_length_passthrough_and_strip():
 
 
 def _make_sub(**overrides):
-    kwargs = dict(
+    kwargs: dict[str, Any] = dict(
         artist="opeth",
         title="blackwater park",
         genres="Death, Progressive",

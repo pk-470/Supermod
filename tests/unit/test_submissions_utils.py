@@ -1,13 +1,25 @@
 """
-Unit tests for ``supermod.features.submissions._utils``. The live ``SUBS_SHEET``
-and ``ALBUMS_WKS`` names are bound on the ``_utils`` module itself, so patch them
-there."""
+Unit tests for ``supermod.features.submissions._utils``. The worksheets are
+reached through the lazy ``subs_sheet`` and ``albums_wks`` accessors, bound on
+the ``_utils`` module via the ``_constants`` star-import, so patch them there.
+"""
 
 from __future__ import annotations
+
+import pytest
 
 from supermod.album_classes import Sub, SubError
 from supermod.features.submissions import _utils
 from tests.fakes import FakeWorksheet, make_message
+
+
+@pytest.fixture(autouse=True)
+def _restore_accessors():
+    """Restore the real lazy accessors after each test (the helpers rebind them)."""
+    original = (_utils.subs_sheet, _utils.albums_wks)
+    yield
+    _utils.subs_sheet, _utils.albums_wks = original
+
 
 # --- helpers -----------------------------------------------------------------
 
@@ -32,12 +44,19 @@ def _make_sub(
 
 
 def _set_subs_sheet(masterlist, rows):
-    """Register a child worksheet for ``masterlist`` on a fresh SUBS_SHEET."""
+    """Point the ``subs_sheet`` accessor at a parent holding ``masterlist``."""
     parent = FakeWorksheet()
     child = FakeWorksheet(rows)
     parent.add_worksheet(masterlist.upper(), child)
-    _utils.SUBS_SHEET = parent
+    _utils.subs_sheet = lambda: parent
     return parent, child
+
+
+def _set_albums_wks(rows):
+    """Point the ``albums_wks`` accessor at a FakeWorksheet of discussed albums."""
+    ws = FakeWorksheet(rows)
+    _utils.albums_wks = lambda: ws
+    return ws
 
 
 # =============================================================================
@@ -149,7 +168,7 @@ def test_submission_check_discussed_wins():
             ["Kid A", "Radiohead", "2000", "Electronic", "alice", "42", "55555"],
         ],
     )
-    _utils.ALBUMS_WKS = FakeWorksheet(
+    _set_albums_wks(
         [
             ["Title", "Artist", "Week"],
             ["Kid A", "Radiohead", "7"],
@@ -174,7 +193,7 @@ def test_submission_check_duplicate_beats_user_already():
             ["Kid A", "Radiohead", "2000", "Electronic", "alice", "42", "55555"],
         ],
     )
-    _utils.ALBUMS_WKS = FakeWorksheet([["Title", "Artist", "Week"]])
+    _set_albums_wks([["Title", "Artist", "Week"]])
 
     sub = _make_sub(title="Kid A", artist="Radiohead", masterlist="voted", submitter_id=42)
     existing = {"voted": [("Kid A", "Radiohead")]}
@@ -194,7 +213,7 @@ def test_submission_check_user_already():
             ["Other Album", "Other Band", "1999", "Rock", "alice", "42", "55555"],
         ],
     )
-    _utils.ALBUMS_WKS = FakeWorksheet([["Title", "Artist", "Week"]])
+    _set_albums_wks([["Title", "Artist", "Week"]])
 
     # Different album, but same submitter already in the masterlist.
     sub = _make_sub(title="Kid A", artist="Radiohead", masterlist="voted", submitter_id=42)
@@ -209,7 +228,7 @@ def test_submission_check_user_already():
 
 def test_submission_check_clean_returns_zero():
     _set_subs_sheet("voted", [["Title", "Artist"]])
-    _utils.ALBUMS_WKS = FakeWorksheet([["Title", "Artist", "Week"]])
+    _set_albums_wks([["Title", "Artist", "Week"]])
 
     sub = _make_sub(title="Kid A", artist="Radiohead", masterlist="voted", submitter_id=42)
     existing = {"voted": []}

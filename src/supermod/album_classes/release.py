@@ -1,9 +1,11 @@
+import logging
 from typing import Optional
 
-from supermod._utils import print_info
 from supermod.album_classes.album import Album
 from supermod.data.discord_country_flags import DISCORD_COUNTRY_FLAGS
 from supermod.data.genres import GENRE_CATEGORIES
+
+logger = logging.getLogger(__name__)
 
 
 class Release(Album):
@@ -54,7 +56,12 @@ class Release(Album):
                 + ")"
             )
         except Exception as e:
-            print_info(f"{type(e).__name__}: {e}")
+            logger.warning(
+                "Could not format album %r by %r for the newsletter: %s",
+                self.title,
+                self.artist,
+                e,
+            )
             return (
                 f"**ERROR:** Something went wrong with album {self.title} by "
                 + f"{self.artist} from {self.countries} (Genre: {self.genres}, "

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "supermod"
-version = "4.0.0"
+version = "5.0"
 description = "A Discord bot that automates moderation and community tasks for the \"Omnivoracious Listeners\" music server."
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
@@ -22,13 +22,19 @@ dependencies = [
 supermod = "supermod.__main__:main"
 
 [dependency-groups]
-dev = ["pytest", "pytest-asyncio", "pytest-cov", "ruff"]
+dev = [
+    "pre-commit",
+    "pyright",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "ruff",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
 asyncio_mode = "auto"
-addopts = "-q"
 
 [tool.coverage.run]
 source = ["supermod"]
@@ -37,6 +43,11 @@ omit = ["*/__main__.py", "*/_constants.py"]
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["supermod*"]
+
+[tool.pyright]
+include = ["src", "tests"]
+pythonVersion = "3.13"
+typeCheckingMode = "standard"
 
 [tool.ruff]
 target-version = "py313"

@@ -1,12 +1,13 @@
-"""Tests for the core helpers: env reading, local-mode detection, info printing."""
+"""Tests for the core helpers: env reading, local-mode detection, log formatting."""
 
 from __future__ import annotations
 
-import re
+import logging
 
+import pendulum
 import pytest
 
-from supermod import _mode_setup, _utils
+from supermod import _logging, _mode_setup, _utils
 
 # --- get_and_verify_env ------------------------------------------------------
 
@@ -46,20 +47,38 @@ def test_is_local_false_when_marker_absent(monkeypatch, tmp_path):
         _mode_setup.is_local.cache_clear()
 
 
-# --- print_info --------------------------------------------------------------
+# --- TorontoFormatter --------------------------------------------------------
 
 
-def test_print_info_outputs_timezone_abbreviation(frozen_now, capsys):
-    _utils.print_info("a message")
-    out = capsys.readouterr().out
+def _record_at(ts: float) -> logging.LogRecord:
+    """Build an INFO record stamped at a chosen POSIX timestamp."""
+    record = logging.LogRecord(
+        name="supermod.test",
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=1,
+        msg="a message",
+        args=None,
+        exc_info=None,
+    )
+    record.created = ts
+    return record
+
+
+def test_formatter_summer_uses_edt():
+    """A summer timestamp renders the DST abbreviation (EDT), not a literal."""
+    ts = pendulum.datetime(2026, 6, 17, 12, 0, 0, tz="America/Toronto").timestamp()
+    out = _logging.TorontoFormatter("%(asctime)s [%(levelname)s] %(message)s").format(
+        _record_at(ts)
+    )
     assert "a message" in out
-    # The timestamp should carry a real %Z abbreviation (EDT in summer / EST in
-    # winter for America/Toronto), not a hardcoded literal.
-    assert re.search(r"\b(EDT|EST)\b", out), out
-
-
-def test_print_info_uses_dst_aware_abbreviation(frozen_now, capsys):
-    """Mid-June abbreviation must be EDT (daylight), not EST."""
-    _utils.print_info("summer")
-    out = capsys.readouterr().out
     assert "EDT" in out, out
+
+
+def test_formatter_winter_uses_est():
+    """A winter timestamp renders the standard abbreviation (EST)."""
+    ts = pendulum.datetime(2026, 1, 17, 12, 0, 0, tz="America/Toronto").timestamp()
+    out = _logging.TorontoFormatter("%(asctime)s [%(levelname)s] %(message)s").format(
+        _record_at(ts)
+    )
+    assert "EST" in out, out

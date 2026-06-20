@@ -1,11 +1,13 @@
+import logging
 from random import choice
 from typing import Optional
 
 from discord import Message
 
-from supermod._utils import *
 from supermod.album_classes import Sub, SubError
 from supermod.features.submissions._constants import *
+
+logger = logging.getLogger(__name__)
 
 
 def msgs_by_index(
@@ -37,7 +39,7 @@ def _safe_int(value: str) -> int:
 
 
 def random_album(masterlist: str) -> Optional[Sub]:
-    rows = SUBS_SHEET.worksheet(masterlist.upper()).get_all_values()[1:]
+    rows = subs_sheet().worksheet(masterlist.upper()).get_all_values()[1:]
     unique: dict[tuple[str, str], list[str]] = {}
     for row in rows:
         unique.setdefault((row[0], row[1]), row)
@@ -50,7 +52,7 @@ def random_album(masterlist: str) -> Optional[Sub]:
         genres=album[3],
         release_date=album[2],
         submitter_name=album[4],
-        submitter_id=album[5],
+        submitter_id=int(album[5]),
         masterlist=masterlist,
         message=None,
     )
@@ -62,7 +64,7 @@ def get_existing_subs_and_submitters(
     masterlist: str,
 ) -> tuple[list[tuple[str, str]], list[int]]:
     """Get all submitters and submissions in a masterlist."""
-    subs: list[list[str]] = SUBS_SHEET.worksheet(masterlist.upper()).get_all_values()[
+    subs: list[list[str]] = subs_sheet().worksheet(masterlist.upper()).get_all_values()[
         1:
     ]
     existing_subs_in_masterlist = [(sub[0], sub[1]) for sub in subs]
@@ -78,7 +80,8 @@ def get_check_data(
 ]:
     """
     Get the data required for masterlist checks (submitters, submissions,
-    previously discussed albums)."""
+    previously discussed albums).
+    """
     existing_subs_dict: dict[str, list[tuple[str, str]]] = {}
     submitters_dict: dict[str, list[int]] = {}
     if masterlist is None or masterlist == "halted":
@@ -94,7 +97,7 @@ def get_check_data(
         ) = get_existing_subs_and_submitters(masterlist)
 
     discussed_albums = [
-        (entry[0], entry[1]) for entry in ALBUMS_WKS.get_all_values()[1:]
+        (entry[0], entry[1]) for entry in albums_wks().get_all_values()[1:]
     ]
 
     return existing_subs_dict, submitters_dict, discussed_albums
@@ -106,7 +109,7 @@ def discussed_check(
     """Check if a submission has been reviewed before in the server."""
     try:
         row = discussed_albums.index((sub.title, sub.artist))
-        cell = ALBUMS_WKS.acell(f"C{row + 2}")
+        cell = albums_wks().acell(f"C{row + 2}")
         assert cell is not None
         value = cell.value
         assert value is not None
@@ -121,7 +124,7 @@ def duplicate_check(
     """Check if an album is already in the masterlist."""
     try:
         row = existing_subs_dict[sub.masterlist].index((sub.title, sub.artist))
-        cell = SUBS_SHEET.worksheet(sub.masterlist.upper()).acell(f"G{row + 2}")
+        cell = subs_sheet().worksheet(sub.masterlist.upper()).acell(f"G{row + 2}")
         assert cell is not None
         value = cell.value
         assert value is not None
@@ -136,7 +139,7 @@ def user_already_in_masterlist_check(
     """Check if a user has already submitted an album in the masterlist."""
     try:
         row = submitters_dict[sub.masterlist].index(sub.submitter_id)
-        cell = SUBS_SHEET.worksheet(sub.masterlist.upper()).acell(f"G{row + 2}")
+        cell = subs_sheet().worksheet(sub.masterlist.upper()).acell(f"G{row + 2}")
         assert cell is not None
         value = cell.value
         assert value is not None
@@ -196,7 +199,9 @@ def submission_make(msg: Message) -> Sub | SubError:
             request=request,
         )
     except Exception as e:
-        print_info(f"{type(e).__name__}: {e}")
+        # A malformed message is routine (it becomes a SubError shown to staff),
+        # so log a one-line warning rather than a per-message traceback.
+        logger.warning("Could not parse submission from message %s: %s", msg.id, e)
         sub_album = SubError(message=msg)
 
     return sub_album
@@ -207,7 +212,8 @@ def masterlist_dict(
 ) -> dict[str, Sub | SubError]:
     """
     Map Discord messages to their submissions for the chosen masterlist as
-    {str(index): submission}."""
+    {str(index): submission}.
+    """
     subs_dict = {}
     entry = 1
     for msg in msgs:

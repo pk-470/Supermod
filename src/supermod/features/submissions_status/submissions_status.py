@@ -1,10 +1,14 @@
+import logging
+
 import pendulum
 from discord.ext import tasks
 from discord.ext.commands import Bot, Cog
 
 from supermod._mode_setup import is_local
-from supermod._utils import print_info
+from supermod._utils import text_channel
 from supermod.features.submissions_status._constants import *
+
+logger = logging.getLogger(__name__)
 
 
 class SubmissionsStatus(Cog):
@@ -12,7 +16,7 @@ class SubmissionsStatus(Cog):
         self.bot = bot
 
         if is_local():
-            print_info("Submissions status loop will not start (local mode).")
+            logger.info("Submissions status loop will not start (local mode).")
         else:
             self.submissions_status.start()
 
@@ -26,16 +30,16 @@ class SubmissionsStatus(Cog):
                 and time_now.hour == SUBMISSIONS_OPEN_HOUR
                 and time_now.minute == SUBMISSIONS_OPEN_MINUTE
             ):
-                announcements_channel = self.bot.get_channel(ANNOUNCEMENTS_CHANNEL)
-                ol_weekly_playlist_channel = self.bot.get_channel(
-                    OL_WEEKLY_PLAYLIST_CHANNEL
+                announcements_channel = text_channel(self.bot, ANNOUNCEMENTS_CHANNEL)
+                ol_weekly_playlist_channel = text_channel(
+                    self.bot, OL_WEEKLY_PLAYLIST_CHANNEL
                 )
-                input_ratings_here_channel = self.bot.get_channel(
-                    INPUT_RATINGS_HERE_CHANNEL
+                input_ratings_here_channel = text_channel(
+                    self.bot, INPUT_RATINGS_HERE_CHANNEL
                 )
-                faqs_channel = self.bot.get_channel(FAQS_CHANNEL)
-                talk_to_the_staff_channel = self.bot.get_channel(
-                    TALK_TO_THE_STAFF_CHANNEL
+                faqs_channel = text_channel(self.bot, FAQS_CHANNEL)
+                talk_to_the_staff_channel = text_channel(
+                    self.bot, TALK_TO_THE_STAFF_CHANNEL
                 )
                 if (
                     announcements_channel is None
@@ -44,7 +48,7 @@ class SubmissionsStatus(Cog):
                     or faqs_channel is None
                     or talk_to_the_staff_channel is None
                 ):
-                    print_info(
+                    logger.warning(
                         "Submissions status loop: a required channel could not be "
                         "resolved for the 'open' announcement; skipping this tick."
                     )
@@ -58,25 +62,24 @@ class SubmissionsStatus(Cog):
                     + f"Check the {faqs_channel.mention} and the individual channel descriptions, "
                     + f"or head to {talk_to_the_staff_channel.mention} if you need further assistance."
                 )
-                print_info(
-                    "'Submissions is open' message has been posted (date: "
-                    + time_now.strftime("%Y-%m-%d")
-                    + ")."
+                logger.info(
+                    "'Submissions is open' message has been posted (date: %s).",
+                    time_now.strftime("%Y-%m-%d"),
                 )
             if (
                 time_now.strftime("%A") == SUBMISSIONS_CLOSED_DAY
                 and time_now.hour == SUBMISSIONS_CLOSED_HOUR
                 and time_now.minute == SUBMISSIONS_CLOSED_MINUTE
             ):
-                announcements_channel = self.bot.get_channel(ANNOUNCEMENTS_CHANNEL)
-                submissions_channel = self.bot.get_channel(SUBMISSIONS_CHANNEL)
-                voted_channel = self.bot.get_channel(VOTED_CHANNEL)
+                announcements_channel = text_channel(self.bot, ANNOUNCEMENTS_CHANNEL)
+                submissions_channel = text_channel(self.bot, SUBMISSIONS_CHANNEL)
+                voted_channel = text_channel(self.bot, VOTED_CHANNEL)
                 if (
                     announcements_channel is None
                     or submissions_channel is None
                     or voted_channel is None
                 ):
-                    print_info(
+                    logger.warning(
                         "Submissions status loop: a required channel could not be "
                         "resolved for the 'closed' announcement; skipping this tick."
                     )
@@ -88,13 +91,12 @@ class SubmissionsStatus(Cog):
                     + "using the :thumbsup: emoji. The winning album will be revealed along with the random picks "
                     + "during the upcoming weekend and will be reviewed next week."
                 )
-                print_info(
-                    "'Submissions is closed' message has been posted (date: "
-                    + time_now.strftime("%Y-%m-%d")
-                    + ")."
+                logger.info(
+                    "'Submissions is closed' message has been posted (date: %s).",
+                    time_now.strftime("%Y-%m-%d"),
                 )
-        except Exception as e:
-            print_info(f"Submissions status loop encountered an error: {e}")
+        except Exception:
+            logger.exception("Submissions status loop encountered an error.")
             return
 
     @submissions_status.before_loop
@@ -103,5 +105,5 @@ class SubmissionsStatus(Cog):
 
     @submissions_status.error
     async def submissions_status_error(self, error):
-        print_info(f"Submissions status loop crashed; restarting. Error: {error}")
+        logger.error("Submissions status loop crashed; restarting.", exc_info=error)
         self.submissions_status.restart()

@@ -1,7 +1,8 @@
 """
 Unit tests for ``supermod.features.newsletter._utils`` pure helpers: ``week_no``,
 ``end_of_week``, ``week_check``, ``ordinal``, ``plural``, ``day_trim`` and
-``post_split``."""
+``post_split``.
+"""
 
 from __future__ import annotations
 

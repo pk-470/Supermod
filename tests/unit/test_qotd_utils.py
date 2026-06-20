@@ -1,8 +1,9 @@
 """
 Tests for supermod.features.qotd._utils. Worksheet columns are A: id,
-B: repeatable ("Y"/"N"), C: question text, D: used count. ``_utils`` binds
-``QOTD_WKS`` on its own module, so point it at a FakeWorksheet via the
-``set_worksheet`` fixture."""
+B: repeatable ("Y"/"N"), C: question text, D: used count. ``_utils`` reaches the
+worksheet through the ``qotd_wks`` accessor, so point it at a FakeWorksheet via
+the ``set_worksheet`` fixture.
+"""
 
 from __future__ import annotations
 
@@ -24,7 +25,7 @@ def test_qotd_get_excludes_header_and_used_includes_eligible(monkeypatch, set_wo
         ["3", "Y", "Used repeatable", "5"],         # eligible (repeatable)
         ["4", "Y", "Unused repeatable", ""],        # eligible
     ]
-    set_worksheet(_utils, "QOTD_WKS", rows)
+    set_worksheet(_utils, "qotd_wks", rows)
 
     # Make random.choice deterministic so we can inspect the pool it was given.
     captured: dict = {}
@@ -60,7 +61,7 @@ def test_qotd_get_returns_none_when_pool_empty(monkeypatch, set_worksheet):
         ["1", "N", "Used non-repeatable", "3"],   # excluded (used)
         ["2", "N", "", ""],                        # excluded (no text)
     ]
-    set_worksheet(_utils, "QOTD_WKS", rows)
+    set_worksheet(_utils, "qotd_wks", rows)
 
     # Guard: random.choice must never be called on an empty pool.
     def boom(_pool):
@@ -72,7 +73,7 @@ def test_qotd_get_returns_none_when_pool_empty(monkeypatch, set_worksheet):
 
 
 def test_qotd_get_returns_none_when_sheet_empty(set_worksheet):
-    set_worksheet(_utils, "QOTD_WKS", [])
+    set_worksheet(_utils, "qotd_wks", [])
     assert _utils.qotd_get() is None
 
 
@@ -85,7 +86,7 @@ def test_mark_as_used_increments_count_of_matched_row(set_worksheet):
         ["1", "N", "First question", ""],
         ["2", "N", "Second question", "2"],
     ]
-    ws = set_worksheet(_utils, "QOTD_WKS", rows)
+    ws = set_worksheet(_utils, "qotd_wks", rows)
 
     # Empty count starts at 0 -> 1.
     _utils.mark_as_used(["1", "N", "First question", ""])
@@ -108,7 +109,7 @@ def test_mark_as_used_marks_correct_row_with_duplicate_text(set_worksheet):
         ["1", "Y", "Duplicate question", ""],     # first occurrence, unused
         ["2", "Y", "Duplicate question", "1"],     # the one actually used
     ]
-    ws = set_worksheet(_utils, "QOTD_WKS", rows)
+    ws = set_worksheet(_utils, "qotd_wks", rows)
 
     _utils.mark_as_used(["2", "Y", "Duplicate question", "1"])
 

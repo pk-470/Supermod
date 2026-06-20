@@ -1,10 +1,13 @@
+import logging
 from typing import Optional
 
 import pendulum
 from pendulum.datetime import DateTime
 
-from supermod._utils import get_and_verify_env, print_info
+from supermod._utils import get_and_verify_env
 from supermod.album_classes import Release
+
+logger = logging.getLogger(__name__)
 
 
 def news_get(sheet_data: list[list[str]], week: int) -> list[Release]:
@@ -36,7 +39,8 @@ def split_by_length(
 ) -> tuple[str, list[str]]:
     """
     Organise albums by length and return the formatted string and a list
-    of errors."""
+    of errors.
+    """
     releases_by_length = {"LP": [], "EP": []}
     errors = []
     for release in releases:
@@ -110,7 +114,8 @@ def newsletter_create(
 def news_by_genre(sheet_data: list[list[str]]) -> tuple[dict[str, str], str]:
     """
     Organise albums by genre category and return {genre category: albums by
-    length} and a string of all errors."""
+    length} and a string of all errors.
+    """
     date = pendulum.now("America/Toronto")
     title_day, week = end_of_week(date)
     albums = news_get(sheet_data, week)
@@ -187,7 +192,7 @@ def week_check(value: str, week: int):
             return True
         return False
     except Exception as e:
-        print_info(f"{type(e).__name__}: {e}")
+        logger.warning("Could not parse release date %r: %s", value, e)
         return False
 
 

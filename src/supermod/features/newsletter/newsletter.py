@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 
 import gspread
@@ -5,8 +6,11 @@ import pendulum
 from discord.ext import commands
 from discord.ext.commands import Bot, Cog, Context
 
+from supermod._utils import is_staff, text_channel
 from supermod.features.newsletter._constants import *
 from supermod.features.newsletter._utils import *
+
+logger = logging.getLogger(__name__)
 
 
 class Newsletter(Cog, description="Functions to fetch the weekly newsletter."):
@@ -31,7 +35,9 @@ class Newsletter(Cog, description="Functions to fetch the weekly newsletter."):
                     )
                     return
             except Exception as e:
-                print_info(f"{type(e).__name__}: {e}")
+                # A mistyped date is user-input validation, not an error worth
+                # a traceback; the user already gets a corrective reply below.
+                logger.warning("Could not parse newsletter date %r: %s", date_str, e)
                 await ctx.send(
                     "Please make sure your date is in the correct format (M/D/YYYY)."
                 )
@@ -39,7 +45,7 @@ class Newsletter(Cog, description="Functions to fetch the weekly newsletter."):
 
         sheet = f"{date.year} OL Rock Albums List"
         try:
-            worksheet = NEWS_SHEET.worksheet(sheet)
+            worksheet = news_sheet().worksheet(sheet)
         except gspread.exceptions.WorksheetNotFound:
             await ctx.send(f"No newsletter exists for {date.year}.")
             return
@@ -50,7 +56,7 @@ class Newsletter(Cog, description="Functions to fetch the weekly newsletter."):
         brief="Add a message to this week's official newsletter.",
         description="Add a message to this week's official newsletter (argument: message).",
     )
-    @commands.has_role(STAFF_ROLE)
+    @is_staff(STAFF_ROLE)
     async def news_full(self, ctx: Context, *, ending_message: Optional[str] = None):
         if ending_message is None:
             await ctx.send(
@@ -60,14 +66,14 @@ class Newsletter(Cog, description="Functions to fetch the weekly newsletter."):
             return
 
         date = pendulum.now("America/Toronto")
-        sheet_data = NEWS_SHEET.sheet1.get_all_values()
+        sheet_data = news_sheet().sheet1.get_all_values()
         await self._newsletter_post(ctx, sheet_data, date, ending_message)
 
     @commands.command(
         brief="Add a message to this week's official newsletter and format it for reddit.",
         description="Add a message to this week's official newsletter and format it for reddit. (argument: message).",
     )
-    @commands.has_role(STAFF_ROLE)
+    @is_staff(STAFF_ROLE)
     async def news_full_reddit(
         self, ctx: Context, *, ending_message: Optional[str] = None
     ):
@@ -79,7 +85,7 @@ class Newsletter(Cog, description="Functions to fetch the weekly newsletter."):
             return
 
         date = pendulum.now("America/Toronto")
-        sheet_data = NEWS_SHEET.sheet1.get_all_values()
+        sheet_data = news_sheet().sheet1.get_all_values()
         await self._newsletter_post(
             ctx,
             sheet_data,
@@ -97,9 +103,9 @@ class Newsletter(Cog, description="Functions to fetch the weekly newsletter."):
         + "Add the word 'post' as an argument to post each genre newsletter in its "
         + "respective genre channel.",
     )
-    @commands.has_role(STAFF_ROLE)
+    @is_staff(STAFF_ROLE)
     async def news_by_genre(self, ctx: Context, arg: Optional[str] = None):
-        sheet_data = NEWS_SHEET.sheet1.get_all_values()
+        sheet_data = news_sheet().sheet1.get_all_values()
         genre_categories_posts, errors_message = news_by_genre(sheet_data)
         for genre_category, long_post in genre_categories_posts.items():
             posts = post_split(long_post, 2000)
@@ -107,14 +113,16 @@ class Newsletter(Cog, description="Functions to fetch the weekly newsletter."):
                 if arg == "post":
                     channel_id = GENRE_CHANNELS.get(genre_category)
                     if channel_id is None:
-                        print_info(
-                            f"No genre channel configured for '{genre_category}'."
+                        logger.warning(
+                            "No genre channel configured for %r.", genre_category
                         )
                         continue
-                    channel = self.bot.get_channel(channel_id)
+                    channel = text_channel(self.bot, channel_id)
                     if channel is None:
-                        print_info(
-                            f"Could not resolve channel {channel_id} for '{genre_category}'."
+                        logger.warning(
+                            "Could not resolve channel %s for %r.",
+                            channel_id,
+                            genre_category,
                         )
                         continue
                     await channel.send(post)

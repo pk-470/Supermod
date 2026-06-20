@@ -1,7 +1,8 @@
 """
 Reusable in-memory test doubles for the gspread and discord objects the bot
 uses, so tests can exercise feature logic without touching Google Sheets or a
-live Discord connection."""
+live Discord connection.
+"""
 
 from __future__ import annotations
 
@@ -50,7 +51,8 @@ class FakeWorksheet:
     """
     In-memory stand-in for a gspread Worksheet and Spreadsheet, so one object
     can back either role. Cell access is 1-based and the grid auto-grows on
-    write."""
+    write.
+    """
 
     def __init__(self, rows: Optional[list[list[str]]] = None, title: str = "Sheet1"):
         self.rows: list[list[str]] = [list(r) for r in (rows or [])]
@@ -148,9 +150,10 @@ def make_message(content: str = "", author_id: int = 1, author_name: str = "test
 def make_ctx():
     """
     Lightweight async-capable command Context double whose ``ctx.send`` records
-    every sent payload in ``ctx.sent`` for assertions."""
+    every sent payload in ``ctx.sent`` for assertions.
+    """
     ctx = MagicMock(name="Context")
-    ctx.sent: list = []
+    ctx.sent = []
     ctx.author = MagicMock(name="Member")
     ctx.author.id = 1
     ctx.author.display_name = "tester"

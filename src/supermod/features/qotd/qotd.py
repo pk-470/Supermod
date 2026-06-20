@@ -1,15 +1,19 @@
-from asyncio.exceptions import TimeoutError  # pylint: disable=redefined-builtin
+import logging
+from asyncio.exceptions import TimeoutError
 from typing import Optional
 
 import pendulum
 from discord import Message, Reaction, User
+from discord.abc import Messageable
 from discord.ext import commands, tasks
 from discord.ext.commands import Bot, Cog, Context
 
 from supermod._mode_setup import is_local
-from supermod._utils import *
+from supermod._utils import is_staff, text_channel
 from supermod.features.qotd._constants import *
 from supermod.features.qotd._utils import *
+
+logger = logging.getLogger(__name__)
 
 
 class QOTD(Cog, description="Submit and retrieve a QOTD."):
@@ -17,7 +21,7 @@ class QOTD(Cog, description="Submit and retrieve a QOTD."):
         self.bot = bot
 
         if is_local():
-            print_info("QOTD loop will not start (local mode).")
+            logger.info("QOTD loop will not start (local mode).")
         else:
             self.qotd_loop.start()
 
@@ -26,21 +30,17 @@ class QOTD(Cog, description="Submit and retrieve a QOTD."):
         try:
             time_now = pendulum.now("America/Toronto")
             if time_now.hour == QOTD_HOUR and time_now.minute == QOTD_MINUTE:
-                channel = self.bot.get_channel(QOTD_APPROVAL_CHANNEL)
+                channel = text_channel(self.bot, QOTD_APPROVAL_CHANNEL)
                 if channel is None:
-                    print_info(
-                        f"QOTD approval channel ({QOTD_APPROVAL_CHANNEL}) not found. "
-                        + "Skipping this QOTD loop tick."
+                    logger.warning(
+                        "QOTD approval channel (%s) not found. "
+                        "Skipping this QOTD loop tick.",
+                        QOTD_APPROVAL_CHANNEL,
                     )
                     return
-                await self._qotd_interact(
-                    channel, timeout=1800  # type: ignore[reportArgumentType]
-                )
-        except Exception as e:
-            print_info(
-                f"Error in qotd_loop tick ({type(e).__name__}: {e}). "
-                + "Skipping this QOTD loop tick."
-            )
+                await self._qotd_interact(channel, timeout=1800)
+        except Exception:
+            logger.exception("Error in qotd_loop tick. Skipping this QOTD loop tick.")
             return
 
     @qotd_loop.before_loop
@@ -48,10 +48,8 @@ class QOTD(Cog, description="Submit and retrieve a QOTD."):
         await self.bot.wait_until_ready()
 
     @qotd_loop.error
-    async def qotd_loop_error(self, error: Exception) -> None:
-        print_info(
-            f"qotd_loop crashed ({type(error).__name__}: {error}). Restarting loop."
-        )
+    async def qotd_loop_error(self, error) -> None:
+        logger.error("qotd_loop crashed. Restarting loop.", exc_info=error)
         self.qotd_loop.restart()
 
     @commands.command(
@@ -60,7 +58,7 @@ class QOTD(Cog, description="Submit and retrieve a QOTD."):
         + "mark it as used, with a red X to reject the question, and with E to post an "
         + "edited version of the question and mark the original as used.",
     )
-    @commands.has_role(STAFF_ROLE)
+    @is_staff(STAFF_ROLE)
     async def qotd(self, ctx: Context):
         await self._qotd_interact(ctx, timeout=60)
 
@@ -68,7 +66,7 @@ class QOTD(Cog, description="Submit and retrieve a QOTD."):
         brief="Add a question / activity to the spreadsheet.",
         description="Follow the bot's instructions to add a question / activity to the spreadsheet.",
     )
-    @commands.has_role(STAFF_ROLE)
+    @is_staff(STAFF_ROLE)
     async def qotd_add(self, ctx: Context):
         def check(resp: Message):
             return resp.author == ctx.author and resp.channel == ctx.channel
@@ -119,7 +117,7 @@ class QOTD(Cog, description="Submit and retrieve a QOTD."):
             )
             response = await self.bot.wait_for("message", timeout=30, check=check)
             if response.content.lower().startswith("y"):
-                QOTD_WKS.append_row([qotd_type, repeatable, qotd])
+                qotd_wks().append_row([qotd_type, repeatable, qotd])
                 await ctx.send("The QOTD was added to the spreadsheet.")
             elif response.content.lower().startswith("n"):
                 await ctx.send("The QOTD was not added to the spreadsheet.")
@@ -132,24 +130,28 @@ class QOTD(Cog, description="Submit and retrieve a QOTD."):
 
         except TimeoutError:
             await ctx.send("Time has run out.")
-        except Exception as e:
-            print_info(f"{type(e).__name__}: {e}")
-            await ctx.send("Something went wrong. Please try again.")
+        except Exception:
+            logger.exception("Error in qotd_add command.")
+            await ctx.send(
+                "Something went wrong while adding the QOTD — it's been logged. "
+                "You can run `,qotd_add` again to retry."
+            )
 
     @commands.command(
         brief="Reset the number of uses for all questions to 0.",
         description="Reset the number of uses for all questions to 0.",
     )
-    @commands.has_role(STAFF_ROLE)
+    @is_staff(STAFF_ROLE)
     async def qotd_reset(self, ctx: Context):
-        q_rows = QOTD_WKS.get_all_values()
+        wks = qotd_wks()
+        q_rows = wks.get_all_values()
         for i, q_row in enumerate(q_rows[1:], start=2):
             if q_row[2]:
-                QOTD_WKS.update_cell(i, 4, 0)
+                wks.update_cell(i, 4, 0)
 
         await ctx.send("Number of uses for all questions set to 0.")
 
-    async def _qotd_interact(self, ctx: Context, timeout):
+    async def _qotd_interact(self, ctx: Messageable, timeout):
         question = qotd_get()
         if question is None:
             await ctx.send("There are no questions available.")
@@ -222,15 +224,15 @@ class QOTD(Cog, description="Submit and retrieve a QOTD."):
         self,
         question: list[str],
         bot: Bot,
-        ctx: Context,
+        ctx: Messageable,
         overwrite: Optional[str] = None,
     ):
         time_now = pendulum.now("America/Toronto")
         date_str = time_now.strftime("%m/%-d/%Y")
-        channel = bot.get_channel(QOTD_CHANNEL)
+        channel = text_channel(bot, QOTD_CHANNEL)
         if channel is None:
-            print_info(
-                f"QOTD channel ({QOTD_CHANNEL}) not found. The QOTD was not posted."
+            logger.warning(
+                "QOTD channel (%s) not found. The QOTD was not posted.", QOTD_CHANNEL
             )
             return
         if overwrite is None:
@@ -245,5 +247,5 @@ class QOTD(Cog, description="Submit and retrieve a QOTD."):
             )
         mark_as_used(question)
         conf_msg = f"QOTD has been posted ({date_str})."
-        print_info(conf_msg)
+        logger.info(conf_msg)
         await ctx.send(conf_msg)

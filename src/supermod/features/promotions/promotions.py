@@ -1,5 +1,6 @@
+import logging
 import re
-from asyncio.exceptions import TimeoutError  # pylint: disable=redefined-builtin
+from asyncio.exceptions import TimeoutError
 
 import pendulum
 from discord import Message, NotFound, TextChannel
@@ -7,9 +8,11 @@ from discord.ext import commands, tasks
 from discord.ext.commands import Bot, Cog, Context
 
 from supermod._mode_setup import is_local
-from supermod._utils import *
+from supermod._utils import is_staff, text_channel
 from supermod.features.newsletter._utils import ordinal
 from supermod.features.promotions._utils import *
+
+logger = logging.getLogger(__name__)
 
 
 class Promotions(
@@ -19,14 +22,14 @@ class Promotions(
         self.bot = bot
 
         if is_local():
-            print_info("Promotions loop will not start (local mode).")
+            logger.info("Promotions loop will not start (local mode).")
         else:
             self.promos_loop.start()
 
     @tasks.loop(minutes=60)
     async def promos_loop(self):
         time_now = pendulum.now("America/Toronto")
-        promos_as_lists = PROMOS_WKS.get_all_values()[1:]
+        promos_as_lists = promos_wks().get_all_values()[1:]
         for promo_as_list in promos_as_lists:
             try:
                 promo_as_list = [i.strip() for i in promo_as_list]
@@ -39,8 +42,9 @@ class Promotions(
                 ):
                     guild = self.bot.get_guild(SERVER)
                     if guild is None:
-                        print_info(
-                            f"Could not find guild with ID {SERVER}; skipping this tick."
+                        logger.warning(
+                            "Could not find guild with ID %s; skipping this tick.",
+                            SERVER,
                         )
                         return
                     if promo_as_list[6] != "N/A":
@@ -48,21 +52,23 @@ class Promotions(
                             for member_id in promo_as_list[6].split(" "):
                                 match = re.search(r"\d+", member_id)
                                 if match is None:
-                                    print_info(
-                                        f"Could not parse member id from '{member_id}'; skipping it."
+                                    logger.warning(
+                                        "Could not parse member id from %r; skipping it.",
+                                        member_id,
                                     )
                                     continue
                                 await guild.fetch_member(int(match.group()))
                             post_in_channel = PROMOS_CHANNEL
                         except NotFound:
                             post_in_channel = REJECTED_PROMOS_CHANNEL
-                            rejected_channel = self.bot.get_channel(
-                                REJECTED_PROMOS_CHANNEL
+                            rejected_channel = text_channel(
+                                self.bot, REJECTED_PROMOS_CHANNEL
                             )
                             if rejected_channel is None:
-                                print_info(
-                                    f"Could not find rejected promos channel with ID "
-                                    f"{REJECTED_PROMOS_CHANNEL}; skipping this promo."
+                                logger.warning(
+                                    "Could not find rejected promos channel with ID "
+                                    "%s; skipping this promo.",
+                                    REJECTED_PROMOS_CHANNEL,
                                 )
                                 continue
                             await rejected_channel.send(
@@ -70,29 +76,28 @@ class Promotions(
                                 + "find at least one of its related members in the server:"
                             )
                         promo_formatted = promo_make(promo_as_list)
-                        channel = self.bot.get_channel(post_in_channel)
+                        channel = text_channel(self.bot, post_in_channel)
                         if channel is None:
-                            print_info(
-                                f"Could not find channel with ID {post_in_channel}; "
-                                "skipping this promo."
+                            logger.warning(
+                                "Could not find channel with ID %s; skipping this promo.",
+                                post_in_channel,
                             )
                             continue
-                        await self._promo_post(promo_formatted, channel)  # type: ignore[reportArgumentType]
+                        await self._promo_post(promo_formatted, channel)
                     else:
-                        channel = self.bot.get_channel(PROMOS_CHANNEL)
+                        channel = text_channel(self.bot, PROMOS_CHANNEL)
                         if channel is None:
-                            print_info(
-                                f"Could not find promos channel with ID {PROMOS_CHANNEL}; "
-                                "skipping this promo."
+                            logger.warning(
+                                "Could not find promos channel with ID %s; "
+                                "skipping this promo.",
+                                PROMOS_CHANNEL,
                             )
                             continue
                         await channel.send(
                             f"**{promo_as_list[2]}**\n\n{promo_as_list[3]}"
                         )
-            except Exception as e:
-                print_info(
-                    f"Error processing promo row {promo_as_list}: {type(e).__name__}: {e}"
-                )
+            except Exception:
+                logger.exception("Error processing promo row %s.", promo_as_list)
                 continue
 
     @promos_loop.before_loop
@@ -100,25 +105,26 @@ class Promotions(
         await self.bot.wait_until_ready()
 
     @promos_loop.error
-    async def promos_loop_error(self, error: Exception) -> None:
-        print_info(
-            f"Promos loop raised {type(error).__name__}: {error}; restarting loop."
-        )
+    async def promos_loop_error(self, error) -> None:
+        logger.error("Promos loop crashed; restarting loop.", exc_info=error)
         self.promos_loop.restart()
 
     @commands.command(
         brief="Add a creator / partner for promotion.",
         description="Follow the bot's instructions to add a creator / partner for promotion.",
     )
-    @commands.has_role(STAFF_ROLE)
+    @is_staff(STAFF_ROLE)
     async def promo_add(self, ctx: Context):
         try:
             await self._promo_add_interaction(ctx)
         except TimeoutError:
             await ctx.send("Time has run out.")
-        except Exception as e:
-            print_info(f"{type(e).__name__}: {e}")
-            await ctx.send("Something went wrong. Please try again.")
+        except Exception:
+            logger.exception("Error in promo_add command.")
+            await ctx.send(
+                "Something went wrong while adding the promo — it's been logged. "
+                "You can run `,promo_add` again to retry."
+            )
 
     async def _promo_post(
         self, promo_formatted: Embed | str, channel: TextChannel | Context
@@ -132,7 +138,9 @@ class Promotions(
             await channel.send(promo_formatted)
 
     async def _promo_add_interaction(self, ctx: Context) -> None:
-        dates = [f"{promo[4]}/{promo[5]}" for promo in PROMOS_WKS.get_all_values()[1:]]
+        dates = [
+            f"{promo[4]}/{promo[5]}" for promo in promos_wks().get_all_values()[1:]
+        ]
         new_promo_data = []
 
         def check(resp: Message):
@@ -211,7 +219,7 @@ class Promotions(
         await ctx.send("Do you want to submit (y/n)?")
         confirm = await self.bot.wait_for("message", timeout=30, check=check)
         if confirm.content.lower().startswith("y"):
-            PROMOS_WKS.append_row(new_promo_data)
+            promos_wks().append_row(new_promo_data)
             await ctx.send("The promo was submitted.")
         elif confirm.content.lower().startswith("n"):
             await ctx.send("The promo was rejected.")
