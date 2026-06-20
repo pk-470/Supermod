@@ -1,0 +1,3 @@
+# Normalize all text files to LF in the repository.
+# Prevents CRLF creep from Windows editors on the WSL /mnt/d mount.
+* text=auto eol=lf

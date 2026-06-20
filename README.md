@@ -1,35 +1,62 @@
 # Supermod
 
-A bot handling various tasks for the Discord server "Omnivoracious Listeners".
+Supermod is a Discord bot that automates moderation and community tasks for the
+**Omnivoracious Listeners** music-discussion server: a question of the day, album
+submissions, weekly newsletters, and scheduled promotions, all backed by Google Sheets.
 
-Version 4.0:
+## Features
 
-Finished features:
+Each feature is a [discord.py](https://discordpy.readthedocs.io/) extension (cog),
+auto-discovered from `supermod/features/`:
 
-- QOTD loop (this time with the correct spreadsheet)
-- Newsletter creation for any date (no extra messages at the bottom)
-- Newsletter full creation (with messages at the bottom)
-- Submissions open/closed messages
-- Help message
-- Fetching album submissions
-- Approving or rejecting album submissions
-- Checking whether a submission has been up for discussion in the server before
-- Creators, friends and partners ads
-- Checking for double submissions
-- Checking whether the user has already submitted an album or not
-- Splitting newsletter albums by genre and posting in the respective genre channels
-- Halting submissions for later consideration
-- Removing old submission whenever the user indicates for it to be replaced
-- Updating sheet data from masterlists (command + 12 hour loop)
-- Updating masterlists from sheet data in a random order
-- Choosing a random album from each masterlist
-- Archiving a channel
-- Search function for submissions implemented
+- **QOTD** — collects, approves, and posts a Question of the Day on a daily schedule.
+- **Submissions** — manages album submissions to the masterlists (fetching,
+  approving/rejecting, duplicate and prior-discussion checks, replacing old
+  submissions, search).
+- **Submissions Status** — posts the scheduled "submissions open" / "closed" announcements.
+- **Promotions** — posts creator, friend, and partner ads on a schedule.
+- **Newsletter** — builds the weekly newsletter and splits albums into genre channels.
+- **General** — utility commands, including archiving a channel to an HTML transcript.
 
-Currently working on:
+## Architecture
 
-- Further automating album submissions
+- **Entry point:** `main.py` builds the `Supermod` bot and, on `on_ready`, loads
+  every feature package under `supermod/features/`.
+- **Command prefix:** `,` (case-insensitive).
+- **Storage:** Google Sheets via [gspread](https://docs.gspread.org/) and a service account.
+- **Scheduling:** `discord.ext.tasks` loops on `America/Toronto` time.
 
-To appear (maybe):
+## Requirements
 
-- Fetching releases filtered by artist, genre etc.
+- Python **3.13**
+- A Discord bot token and a Google service account
+
+## Local development
+
+```bash
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+python main.py
+```
+
+Set `local_mode="ON"` in `main.py`'s `run_bot(...)` call to run locally. In local
+mode, credentials are read from `.tokens/.env` (via `python-dotenv`) and
+`.tokens/service_account.json`; in deployment (`local_mode="OFF"`) they come from
+environment variables, with the service account supplied as `SERVICE_ACCOUNT_CRED`.
+Configuration (Discord token, sheet URLs, channel and role IDs) is read in the
+`supermod/features/*/*_constants.py` modules.
+
+## Deployment (Heroku)
+
+The bot runs as a worker dyno (`Procfile`: `worker: python main.py`) on the
+**Heroku-24** stack, with the Python version pinned by `.python-version` (`3.13`).
+
+To migrate an existing app from an older stack and deploy:
+
+```bash
+heroku stack:set heroku-24 -a super-mod    # point at the Heroku-24 stack
+git push heroku main                       # rebuild is required for the stack change
+heroku ps -a super-mod                     # ensure the worker is running
+heroku logs --tail -a super-mod
+```

@@ -1,0 +1,21 @@
+# Enable once per clone:  uv run pre-commit install
+# Run against everything:  uv run pre-commit run --all-files
+#
+# Hooks run through `uv run` so they use the exact ruff/pyright versions pinned
+# in uv.lock (no drift from a separately-managed pre-commit toolchain).
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff (lint + autofix)
+        entry: uv run ruff check --fix
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+
+      - id: pyright
+        name: pyright
+        entry: uv run pyright
+        language: system
+        types: [python]
+        pass_filenames: false

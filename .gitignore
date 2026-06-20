@@ -1,2 +1,29 @@
-**/__pycache__
-.*
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Secrets & local config
+.tokens/
+.env
+# local-dev mode marker (its presence enables local mode; never commit it)
+.local
+
+# Packaging / build artifacts
+*.egg-info/
+dist/
+build/
+
+# Testing / coverage
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+
+# Editor / OS
+.vscode/
+.DS_Store

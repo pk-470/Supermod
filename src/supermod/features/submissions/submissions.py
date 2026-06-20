@@ -1,0 +1,753 @@
+import asyncio
+import logging
+from asyncio.exceptions import TimeoutError
+from random import shuffle
+from typing import Optional
+
+from discord import Message
+from discord.abc import Messageable
+from discord.ext import commands, tasks
+from discord.ext.commands import Bot, Cog, Context
+
+from supermod._mode_setup import is_local
+from supermod._utils import is_staff, text_channel
+from supermod.features.newsletter._utils import post_split
+from supermod.features.submissions._constants import *
+from supermod.features.submissions._utils import *
+
+logger = logging.getLogger(__name__)
+
+
+class Submissions(
+    Cog,
+    name="Album Submissions",
+    description="Functions to handle album submissions for the masterlists.",
+):
+    def __init__(self, bot: Bot):
+        self.bot = bot
+        self.sheet_updating: bool = False
+        self.masterlist_updating: bool = False
+
+        if is_local():
+            logger.info("Submission sheets will not be updated (local mode).")
+        else:
+            self.subs_sheet_update.start()
+
+    @tasks.loop(hours=12)
+    async def subs_sheet_update(self):
+        if self.sheet_updating or self.masterlist_updating:
+            logger.info(
+                "subs_sheet_update loop: a manual update is in progress; skipping."
+            )
+            return
+        try:
+            approval_channel = text_channel(self.bot, SUB_APPROVAL_CHANNEL)
+            if approval_channel is None:
+                logger.warning(
+                    "subs_sheet_update loop: approval channel not found; skipping."
+                )
+                return
+            self.sheet_updating = True
+            for masterlist in MASTERLIST_CHANNEL_DICT:
+                await self._update_subs_sheet(approval_channel, masterlist)
+        except Exception:
+            logger.exception("subs_sheet_update loop error.")
+        finally:
+            self.sheet_updating = False
+
+    @subs_sheet_update.before_loop
+    async def before_subs_sheet_update(self) -> None:
+        await self.bot.wait_until_ready()
+
+    @commands.command(
+        brief="Search for your submissions.",
+        description="Search for your submissions. Optional argument: masterlist name.",
+    )
+    async def my_subs(self, ctx: Context, masterlist: Optional[str] = None):
+        if await self._updating_check(ctx):
+            return
+
+        async def retrieve_sub(ctx: Context, masterlist: str):
+            wks = subs_sheet().worksheet(masterlist.upper())
+            sub_cell = wks.find(f"{ctx.author.id}")
+            if sub_cell is None:
+                return f"{masterlist}: No submission."
+            sub_data = wks.row_values(sub_cell.row)
+            return f"{masterlist}: {sub_data[0]} by {sub_data[1]} ({sub_data[2]}) ({sub_data[3]})"
+
+        if masterlist is None:
+            message = f"<@!{ctx.author.id}> submissions:\n\n" + "\n".join(
+                [
+                    await retrieve_sub(ctx, masterlist.upper())
+                    for masterlist in MASTERLIST_CHANNEL_DICT
+                ]
+            )
+            for chunk in post_split(message, 2000):
+                await ctx.send(chunk)
+        elif masterlist.lower() in MASTERLIST_CHANNEL_DICT:
+            message = f"<@!{ctx.author.id}> submission for {await retrieve_sub(ctx, masterlist.upper())}"
+            for chunk in post_split(message, 2000):
+                await ctx.send(chunk)
+        else:
+            await ctx.send(
+                "Please provide a valid masterlist name, or no name if you wish"
+                "to see all your submissions."
+            )
+
+    @commands.command(
+        brief="Manually add a submission to a masterlist (for staff use only).",
+        description="Manually add a submission to a masterlist (for staff use only). Use "
+        + "the usual submission format (i.e. Title // Artist // Year // Genre // Masterlist).",
+    )
+    @is_staff(STAFF_ROLE)
+    async def submit(self, ctx: Context):
+        if await self._updating_check(ctx):
+            return
+
+        await ctx.send(
+            "You have 5 minutes to respond with your submission, "
+            + "or with 'stop' to stop the submission process."
+        )
+
+        def check(resp: Message):
+            return resp.author == ctx.author and resp.channel == ctx.channel
+
+        try:
+            response = await self.bot.wait_for("message", timeout=300, check=check)
+
+            if response.content.lower() == "stop":
+                await ctx.send("The submission process has stopped.")
+                return
+
+            sub = submission_make(response)
+            if isinstance(sub, SubError):
+                await ctx.send(
+                    "There is something wrong with the format of your submission."
+                )
+                return
+
+            existing_subs_dict, submitters_dict, discussed_albums = get_check_data(
+                sub.masterlist
+            )
+            error_id = submission_check(
+                sub, existing_subs_dict, submitters_dict, discussed_albums
+            )
+
+            if sub.warning == "discussed":
+                await ctx.send(
+                    f"**WARNING:** This album seems to have been discussed already on week {error_id}."
+                )
+            elif sub.warning == "duplicate":
+                channel = text_channel(
+                    self.bot, MASTERLIST_CHANNEL_DICT[sub.masterlist]
+                )
+                if channel is None:
+                    logger.warning(
+                        "submit: masterlist channel for %s not found; "
+                        "skipping duplicate warning link.",
+                        sub.masterlist,
+                    )
+                    return
+                sub_msg = await channel.fetch_message(error_id)
+                await ctx.send(
+                    f"**WARNING:** This album seems to be in {sub.masterlist.upper()} already. "
+                    + f"Link to existing submission: <{sub_msg.jump_url}>."
+                )
+            elif sub.warning == "user already in masterlist":
+                channel = text_channel(
+                    self.bot, MASTERLIST_CHANNEL_DICT[sub.masterlist]
+                )
+                if channel is None:
+                    logger.warning(
+                        "submit: masterlist channel for %s not found; "
+                        "skipping user-already-in-masterlist warning link.",
+                        sub.masterlist,
+                    )
+                    return
+                sub_msg = await channel.fetch_message(error_id)
+                await ctx.send(
+                    f"**WARNING:** You seem to have a submission in {sub.masterlist.upper()} already. "
+                    + f"Link to existing submission: <{sub_msg.jump_url}>."
+                )
+            else:
+                await self._submit_album(sub)
+        except TimeoutError:
+            await ctx.send("Time has run out.")
+        except Exception:
+            logger.exception("Error in submit command.")
+            await ctx.send(
+                "Something went wrong while processing that submission — it's been "
+                "logged. You can run `,submit` again to retry."
+            )
+
+    @commands.command(
+        brief="Fetch and approve or reject submissions for the masterlists.",
+        description="Fetch and approve or reject submissions for the masterlists. "
+        "Optional argument: masterlist name (i.e. one of 'voted', 'new', 'modern', 'classic', 'theme', 'anything') "
+        + "to only fetch submissions for that masterlist, or 'error' to fetch messages in #submissions "
+        + "which cannot be correctly interpreted as a submission by the bot. "
+        + "Once the submissions have been fetched, you have 20 minutes to respond with 'ok' in order "
+        + "to approve all submissions, 'reject' followed by the numbers of the submissions you want to "
+        + "reject, or 'stop' to stop the process.",
+    )
+    @is_staff(STAFF_ROLE)
+    async def subs(self, ctx: Context, masterlist: Optional[str] = None):
+        if await self._updating_check(ctx):
+            return
+
+        if masterlist is not None:
+            masterlist = masterlist.lower()
+
+        # Check if an appropriate masterlist is chosen, otherwise prompt for one.
+        if masterlist is None:
+            subs_dict = await self._subs_check_msg(ctx, masterlist=None)
+        elif masterlist in list(MASTERLIST_CHANNEL_DICT.keys()) + [
+            "error",
+            "halted",
+        ]:
+            subs_dict = await self._subs_check_msg(ctx, masterlist)
+        else:
+            await ctx.send(
+                "Please provide a valid masterlist, or 'error' if you want to fetch all "
+                + "new submissions with errors, or no masterlist if you want to fetch all "
+                + "new submissions from all lists (including those with errors)."
+            )
+
+            return
+
+        if not subs_dict:
+            return
+
+        if masterlist == "halted":
+            await ctx.send(
+                "You have 30 minutes to respond with one of:\n"
+                + "· 'ok' in order to approve all submissions without errors or warnings;\n"
+                + "· 'reject' followed by the numbers of the submissions you want to reject "
+                + "(separated by ',');\n"
+                + "· 'unhalt' followed by the numbers of the submissions you want to unhalt "
+                + "(separated by ',');\n"
+                + "· 'stop' in order to stop the process."
+            )
+
+        else:
+            await ctx.send(
+                "You have 30 minutes to respond with one of:\n"
+                + "· 'ok' in order to approve all submissions without errors or warnings;\n"
+                + "· 'reject' followed by the numbers of the submissions you want to reject "
+                + "(separated by ',');\n"
+                + "· 'halt' followed by the numbers of the submissions you want to halt "
+                + "for later consideration (separated by ',');\n"
+                + "· 'stop' in order to stop the process."
+            )
+
+        # Submission checking options
+
+        def check(resp: Message):
+            return resp.author == ctx.author and resp.channel == ctx.channel
+
+        try:
+            response = await self.bot.wait_for("message", timeout=1800, check=check)
+
+            if response.content.lower().startswith("stop"):
+                await ctx.send("The submissions approval process has stopped.")
+                return
+
+            # Approve submissions
+            if response.content.lower().startswith("ok"):
+                if masterlist == "error":
+                    await ctx.send(
+                        "I can't add submissions with errors to the masterlist."
+                    )
+                elif masterlist == "halted":
+                    for _, sub in list(subs_dict.items()):
+                        if isinstance(sub, Sub) and sub.warning is None:
+                            assert sub.message is not None
+                            await sub.message.clear_reaction("🇭")
+                            await self._submit_album(sub)
+                    await ctx.send(
+                        "All new submissions without errors or warnings were added to the masterlists."
+                    )
+                elif masterlist is None:
+                    for _, sub in subs_dict.items():
+                        if isinstance(sub, Sub) and sub.warning is None:
+                            await self._submit_album(sub)
+                    await ctx.send(
+                        "All new submissions without errors or warnings were added to the masterlists."
+                    )
+                else:
+                    for _, sub in subs_dict.items():
+                        if (
+                            isinstance(sub, Sub)
+                            and sub.warning is None
+                            and sub.masterlist == masterlist
+                        ):
+                            await self._submit_album(sub)
+                    await ctx.send(
+                        "All new submissions without errors or warnings were added to the "
+                        f"{masterlist.upper()} masterlist."
+                    )
+
+            # Reject submissions
+            elif response.content.lower().startswith("reject"):
+                rej_sub_indices, rej_sub_msgs = msgs_by_index(response, subs_dict)
+                for msg in rej_sub_msgs:
+                    await msg.add_reaction("❌")
+                if len(rej_sub_indices) == 1:
+                    await ctx.send(f"Album {rej_sub_indices[0]} was rejected.")
+                elif len(rej_sub_indices) > 1:
+                    await ctx.send(
+                        "Albums " + ", ".join(rej_sub_indices) + " were rejected."
+                    )
+
+            # Halt submissions for later consideration.
+            elif response.content.lower().startswith("halt") and masterlist != "halted":
+                halt_sub_indices, halt_sub_msgs = msgs_by_index(response, subs_dict)
+                for msg in halt_sub_msgs:
+                    await msg.add_reaction("🇭")
+                if len(halt_sub_indices) == 1:
+                    await ctx.send(f"Album {halt_sub_indices[0]} was halted.")
+                elif len(halt_sub_indices) > 1:
+                    await ctx.send(
+                        "Albums " + ", ".join(halt_sub_indices) + " were halted."
+                    )
+
+            # Unhalt halted submissions.
+            elif (
+                response.content.lower().startswith("unhalt") and masterlist == "halted"
+            ):
+                unhalt_sub_indices, unhalt_sub_msgs = msgs_by_index(response, subs_dict)
+                for msg in unhalt_sub_msgs:
+                    await msg.clear_reaction("🇭")
+                if len(unhalt_sub_indices) == 1:
+                    await ctx.send(f"Album {unhalt_sub_indices[0]} was unhalted.")
+                elif len(unhalt_sub_indices) > 1:
+                    await ctx.send(
+                        "Albums " + ", ".join(unhalt_sub_indices) + " were unhalted."
+                    )
+
+            else:
+                await ctx.send(
+                    f"I don't know what you mean by '{response.content}'. "
+                    + "Please start the submissions approval process again."
+                )
+
+        except TimeoutError:
+            await ctx.send("Time has run out.")
+        except Exception:
+            logger.exception("Error in subs command.")
+            await ctx.send(
+                "Something went wrong while fetching submissions — it's been logged. "
+                "You can run `,subs` again to retry."
+            )
+
+    @commands.command(
+        brief="Choose a random album from a masterlist.",
+        description="Choose a random album from a masterlist. Optional argument: "
+        + "masterlist name (i.e. one of 'voted', 'new', 'modern', 'classic', 'theme', 'anything'). "
+        + "If no masterlist is specified, the bot will get a random album from every "
+        + "masterlist except 'voted'.",
+    )
+    @is_staff(STAFF_ROLE)
+    async def get_random(self, ctx: Context, masterlist: Optional[str] = None):
+        if await self._updating_check(ctx):
+            return
+
+        if masterlist is None:
+            for mlist in [
+                key for key in MASTERLIST_CHANNEL_DICT.keys() if key != "voted"
+            ]:
+                sub = random_album(mlist)
+                if sub is None:
+                    await ctx.send(f"No albums found in {mlist.upper()}.")
+                    continue
+                await ctx.send(f"{mlist.upper()} choice: {sub.masterlist_format()}")
+        elif masterlist.lower() in MASTERLIST_CHANNEL_DICT:
+            sub = random_album(masterlist)
+            if sub is None:
+                await ctx.send(f"No albums found in {masterlist.upper()}.")
+                return
+            await ctx.send(f"{masterlist.upper()} choice: {sub.masterlist_format()}")
+        else:
+            await ctx.send(
+                "Please provide a valid masterlist name, or no name if you wish"
+                + "to get a random album from every masterlist (except 'voted')."
+            )
+
+    @commands.command(
+        brief="Pass all submissions from a masterlist to its corresponding google sheet.",
+        description="Pass all submissions from a masterlist to its corresponding google sheet. "
+        + "Optional argument: masterlist name (i.e. one of 'voted', 'new', 'modern', 'classic', 'theme', 'anything'). "
+        + "If no masterlist is specified, the bot will update all sheets.",
+    )
+    @is_staff(STAFF_ROLE)
+    async def update_sheet(self, ctx: Context, masterlist: Optional[str] = None):
+        if await self._updating_check(ctx):
+            return
+
+        self.sheet_updating = True
+
+        try:
+            if masterlist is None:
+                for mlist in MASTERLIST_CHANNEL_DICT:
+                    await self._update_subs_sheet(ctx, mlist)
+            elif masterlist.lower() in MASTERLIST_CHANNEL_DICT:
+                await self._update_subs_sheet(ctx, masterlist.lower())
+            else:
+                await ctx.send(
+                    "Please provide a valid masterlist name, or no name if you wish to update "
+                    + "all masterlists from the sheet data."
+                )
+        finally:
+            self.sheet_updating = False
+
+    @commands.command(
+        brief="Pass all submissions from a sheet to its corresponding masterlist in a random order.",
+        description="Pass all submissions from a sheet to its corresponding masterlist in a random order. "
+        "Optional argument: masterlist name (i.e. one of 'voted', 'new', 'modern', 'classic', 'theme', 'anything'). "
+        + "If no masterlist is specified, the bot will update all masterlists.",
+    )
+    @is_staff(STAFF_ROLE)
+    async def update_masterlist(self, ctx: Context, masterlist: Optional[str] = None):
+        if await self._updating_check(ctx):
+            return
+
+        self.masterlist_updating = True
+
+        try:
+            if masterlist is None:
+                for mlist in MASTERLIST_CHANNEL_DICT:
+                    await self._sheet_to_masterlist(ctx, mlist)
+                    await self._update_subs_sheet(ctx, mlist)
+            elif masterlist.lower() in MASTERLIST_CHANNEL_DICT:
+                await self._sheet_to_masterlist(ctx, masterlist.lower())
+                await self._update_subs_sheet(ctx, masterlist.lower())
+            else:
+                await ctx.send(
+                    "Please provide a valid masterlist name, or no name if you wish to update "
+                    + "all masterlists from the sheet data."
+                )
+        finally:
+            self.masterlist_updating = False
+
+    async def _updating_check(self, ctx: Context):
+        if self.sheet_updating:
+            await ctx.send("Submission sheets are currently updating. Try again later.")
+            return True
+
+        if self.masterlist_updating:
+            await ctx.send(
+                "Masterlist channels are currently updating. Try again later."
+            )
+            return True
+
+        return False
+
+    async def _submit_album(self, sub: Sub):
+        """Submit an album."""
+
+        # If the submitter asks for a replacement:
+        if sub.request == "replace":
+            wks = subs_sheet().worksheet(sub.masterlist.upper())
+            # Locate the submitter in the spreadsheet.
+            prev_sub_cell = wks.find(f"{sub.submitter_id}")
+            if prev_sub_cell is not None:
+                # If the submitter is in the spreadsheet, locate the message id of
+                # their previous submission in the same row as their user id.
+                prev_sub_row = prev_sub_cell.row
+                prev_sub_msg_id = wks.acell(f"G{prev_sub_row}").value
+                assert prev_sub_msg_id is not None
+                prev_sub_msg_id = int(prev_sub_msg_id)
+                # Get the channel corresponding to the requested masterlist and delete
+                # their previous submission.
+                channel = text_channel(
+                    self.bot, MASTERLIST_CHANNEL_DICT[sub.masterlist]
+                )
+                if channel is None:
+                    logger.warning(
+                        "_submit_album: masterlist channel for %s not found; "
+                        "skipping replacement of previous submission.",
+                        sub.masterlist,
+                    )
+                else:
+                    prev_sub_msg = await channel.fetch_message(prev_sub_msg_id)
+                    await prev_sub_msg.delete()
+                    # Delete their submission from the spreadsheet.
+                    wks.delete_rows(prev_sub_row)
+
+        # Submit the album in the requested masterlist.
+        masterlist_channel = text_channel(
+            self.bot, MASTERLIST_CHANNEL_DICT[sub.masterlist]
+        )
+        if masterlist_channel is None:
+            logger.warning(
+                "_submit_album: masterlist channel for %s not found; "
+                "cannot submit album.",
+                sub.masterlist,
+            )
+            return
+        sub_msg = await masterlist_channel.send(sub.masterlist_format())
+        # Add the submission to the spreadsheet.
+        subs_sheet().worksheet(sub.masterlist.upper()).append_row(
+            [
+                sub.title,
+                sub.artist,
+                sub.release_date,
+                ", ".join(sub.genres),
+                sub.submitter_name,
+                f"{sub.submitter_id}",
+                f"{sub_msg.id}",
+            ]
+        )
+        # Mark the submission as accepted.
+        assert sub.message is not None
+        await sub.message.add_reaction("🆗")
+
+    async def _subs_check_msg(
+        self, ctx: Context, masterlist: Optional[str]
+    ) -> dict[str, Sub | SubError]:
+        """
+        Create the mod approval message for any new submissions and return
+        the submissions dictionary.
+        """
+        # Fetch submission history and keep those with no reaction.
+        msgs = []
+        submissions_channel = text_channel(self.bot, SUBMISSIONS_CHANNEL)
+        if submissions_channel is None:
+            logger.warning("_subs_check_msg: submissions channel not found; aborting.")
+            await ctx.send(
+                "I couldn't find the submissions channel — this looks like a "
+                "configuration problem, so retrying won't help. Please let the staff know."
+            )
+            return {}
+        if masterlist == "halted":
+            async for msg in submissions_channel.history(limit=100):
+                if "🇭" in [reaction.emoji for reaction in msg.reactions]:
+                    msgs.append(msg)
+        else:
+            async for msg in submissions_channel.history(limit=100):
+                if not msg.reactions:
+                    msgs.append(msg)
+
+        # Create the appropriate submissions dictionary.
+        subs_dict = masterlist_dict(msgs, masterlist)
+
+        # Check if there are any new submissions.
+        if not subs_dict:
+            if masterlist is None:
+                await ctx.send("There are no new submissions.")
+            elif masterlist == "error":
+                await ctx.send("There are no new submissions with errors.")
+            elif masterlist == "halted":
+                await ctx.send("There are no halted submissions.")
+            else:
+                await ctx.send(
+                    f"There are no new submissions for the {masterlist.upper()} masterlist."
+                )
+
+            return {}
+
+        # Fetch the relevant data from the submissions spreadsheet and the discussed albums.
+        existing_subs_dict, submitters_dict, discussed_albums = get_check_data(
+            masterlist
+        )
+
+        # Perform the various checks on new submissions.
+        check_list = []
+        for ind, sub in subs_dict.items():
+            # Check for errors.
+            if isinstance(sub, SubError):
+                check_list.append(
+                    f"**{ind}.** Something went wrong with submission <{sub.message.jump_url}>."
+                )
+                continue
+
+            # Check whether the album has been reviewed before, whether it is already in the
+            # specified masterlist, or whether the user has a submission already in the
+            # specified masterlist.
+            error_id = submission_check(
+                sub, existing_subs_dict, submitters_dict, discussed_albums
+            )
+
+            # Append the relevant warning to the submissions check message.
+            check_msg = f"**{ind}.** {sub.sub_check_msg_full()}"
+            if sub.warning == "discussed":
+                check_msg += (
+                    "\n"
+                    f"**WARNING:** This album seems to have been discussed already on week {error_id}."
+                )
+            elif sub.warning == "duplicate":
+                channel = text_channel(
+                    self.bot, MASTERLIST_CHANNEL_DICT[sub.masterlist]
+                )
+                if channel is None:
+                    logger.warning(
+                        "_subs_check_msg: masterlist channel for %s not found; "
+                        "omitting duplicate warning link.",
+                        sub.masterlist,
+                    )
+                else:
+                    sub_msg = await channel.fetch_message(error_id)
+                    check_msg += (
+                        "\n"
+                        f"**WARNING:** This album seems to be in {sub.masterlist.upper()} already. "
+                        f"Link to existing submission: <{sub_msg.jump_url}>."
+                    )
+            elif sub.warning == "user already in masterlist":
+                channel = text_channel(
+                    self.bot, MASTERLIST_CHANNEL_DICT[sub.masterlist]
+                )
+                if channel is None:
+                    logger.warning(
+                        "_subs_check_msg: masterlist channel for %s not found; "
+                        "omitting user-already-in-masterlist warning link.",
+                        sub.masterlist,
+                    )
+                else:
+                    sub_msg = await channel.fetch_message(error_id)
+                    check_msg += (
+                        "\n"
+                        f"**WARNING:** {sub.submitter_name} ({sub.submitter_id}) "
+                        f"seems to have a submission in {sub.masterlist.upper()} already. "
+                        f"Link to existing submission: <{sub_msg.jump_url}>."
+                    )
+
+            check_list.append(check_msg)
+
+        # Create post.
+        subs_check_msg_full = "\n\n".join(check_list)
+        subs_check = post_split(subs_check_msg_full, 2000)
+        for sub_check in subs_check:
+            await ctx.send(sub_check)
+
+        return subs_dict
+
+    async def _masterlist_sub_make(self, post: str, masterlist: str) -> Sub:
+        """Create a submission from a formatted masterlist post string."""
+        post_split_list = post.split("_by_")
+        sub_data = [post_split_list[0]]
+        post_split_list = post_split_list[1].split("(", 1)
+        sub_data.append(post_split_list[0])
+        post_split_list = post_split_list[1].split(")", 1)
+        sub_data.append(post_split_list[0])
+        post_split_list = post_split_list[1][2:].split(")")
+        sub_data.append(post_split_list[0])
+        sub_id = ""
+        for i in post_split_list[1]:
+            if i.isnumeric():
+                sub_id += i
+        sub_data.append(sub_id)
+        user = await self.bot.fetch_user(int(sub_id))
+        sub_data.append(user.display_name)
+
+        sub_album = Sub(
+            artist=sub_data[1],
+            title=sub_data[0],
+            genres=sub_data[3],
+            release_date=sub_data[2],
+            submitter_name=sub_data[5],
+            submitter_id=int(sub_data[4]),
+            masterlist=masterlist,
+            message=None,
+        )
+
+        return sub_album
+
+    async def _update_subs_sheet(self, ctx: Messageable, masterlist: str) -> None:
+        """Pass all submissions from a masterlist to its corresponding sheet."""
+        logger.info("Updating %s sheet.", masterlist.upper())
+        await ctx.send(f"Updating {masterlist.upper()} sheet.")
+
+        masterlist_channel = text_channel(self.bot, MASTERLIST_CHANNEL_DICT[masterlist])
+        if masterlist_channel is None:
+            logger.warning(
+                "_update_subs_sheet: masterlist channel for %s not found; "
+                "skipping sheet update.",
+                masterlist,
+            )
+            await ctx.send(
+                f"Could not find the {masterlist.upper()} channel. Skipping."
+            )
+            return
+
+        subs_wks = subs_sheet().worksheet(masterlist.upper())
+        subs_wks.clear()
+        problem_subs = []
+        subs_wks.append_row(
+            [
+                "Title",
+                "Artist",
+                "Year",
+                "Genre",
+                "Submitter Name",
+                "Submitter ID",
+                "Message ID",
+            ]
+        )
+        async for msg in masterlist_channel.history():
+            try:
+                sub = await self._masterlist_sub_make(msg.content, masterlist)
+                subs_wks.append_row(
+                    [
+                        sub.title,
+                        sub.artist,
+                        sub.release_date,
+                        ", ".join(sub.genres),
+                        sub.submitter_name,
+                        f"{sub.submitter_id}",
+                        f"{msg.id}",
+                    ]
+                )
+                await asyncio.sleep(1)
+            except Exception:
+                logger.exception("Could not transfer submission %s to sheet.", msg.id)
+                problem_subs.append(msg.jump_url)
+
+        logger.info("%s sheet updated.", masterlist.upper())
+        await ctx.send(f"{masterlist.upper()} sheet updated.")
+
+        if problem_subs:
+            await ctx.send(f"Problem subs in {masterlist.upper()}:")
+            await ctx.send("\n".join(problem_subs))
+
+    async def _sheet_to_masterlist(self, ctx: Context, masterlist: str) -> None:
+        """Pass all submissions from a sheet to its corresponding masterlist."""
+        logger.info("Updating %s masterlist.", masterlist.upper())
+
+        await ctx.send(f"Updating {masterlist.upper()} masterlist.")
+
+        channel = text_channel(self.bot, MASTERLIST_CHANNEL_DICT[masterlist])
+        if channel is None:
+            logger.warning(
+                "_sheet_to_masterlist: masterlist channel for %s not found; "
+                "skipping masterlist update.",
+                masterlist,
+            )
+            await ctx.send(
+                f"Could not find the {masterlist.upper()} channel. Skipping."
+            )
+            return
+        await channel.purge(limit=100)
+        subs_wks = subs_sheet().worksheet(masterlist.upper())
+        albums = subs_wks.get_all_values()[1:]
+        shuffle(albums)
+        for album in albums:
+            sub = Sub(
+                artist=album[1],
+                title=album[0],
+                genres=album[3],
+                release_date=album[2],
+                submitter_name=album[4],
+                submitter_id=album[5],
+                masterlist=masterlist,
+                message=None,
+            )
+
+            await channel.send(sub.masterlist_format())
+
+        logger.info(
+            "%s masterlist has been updated in a random order.", masterlist.upper()
+        )
+
+        await ctx.send(
+            f"{masterlist.upper()} masterlist has been updated in a random order."
+        )
