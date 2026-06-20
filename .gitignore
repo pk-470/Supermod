@@ -8,7 +8,8 @@ venv/
 env/
 
 # Secrets & local config
-.tokens/
+.secrets/*
+!.secrets/.env.example
 .env
 # local-dev mode marker (its presence enables local mode; never commit it)
 .local

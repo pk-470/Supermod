@@ -8,7 +8,7 @@ PACKAGE_DIR = Path(__file__).resolve().parent
 # local mode; deployment reads credentials from environment variables.)
 REPO_ROOT = Path.cwd()
 
-TOKENS_PATH = REPO_ROOT / ".tokens"
+TOKENS_PATH = REPO_ROOT / ".secrets"
 LOCAL_MARKER = REPO_ROOT / ".local"  # presence => local-dev mode (gitignored)
 FEATURES_DIR = PACKAGE_DIR / "features"
 FEATURES_PACKAGE = "supermod.features"

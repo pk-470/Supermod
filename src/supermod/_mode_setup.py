@@ -18,7 +18,7 @@ def is_local() -> bool:
 @lru_cache(maxsize=1)
 def load_local_env() -> None:
     """
-    In local mode, load secrets from .tokens/.env into the environment once;
+    In local mode, load secrets from .secrets/.env into the environment once;
     a no-op in deployment, where configuration comes from real env variables.
     """
     if is_local():
