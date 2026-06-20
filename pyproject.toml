@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "supermod"
+version = "4.0.0"
+description = "A Discord bot that automates moderation and community tasks for the \"Omnivoracious Listeners\" music server."
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+authors = [{ name = "pk-470" }]
+dependencies = [
+    "chat-exporter==3.1.0",
+    "discord.py==2.7.1",
+    "gspread==6.2.1",
+    "pendulum==3.2.0",
+    "python-dotenv==1.2.2",
+    "titlecase==2.4.1",
+]
+
+[project.scripts]
+supermod = "supermod.__main__:main"
+
+[dependency-groups]
+dev = ["pytest", "pytest-asyncio", "pytest-cov", "ruff"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+asyncio_mode = "auto"
+addopts = "-q"
+
+[tool.coverage.run]
+source = ["supermod"]
+omit = ["*/__main__.py", "*/_constants.py"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["supermod*"]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]             # long lines in static-data modules are not worth reflowing
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"] # package re-exports
+"src/supermod/features/**/*.py" = [
+    "F403",
+    "F405",
+] # intentional star imports of shared helpers
+"src/supermod/album_classes/album.py" = ["F403", "F405"]
