@@ -8,7 +8,7 @@ all backed by Google Sheets.
 
 - **Entry point:** `uv run supermod`
 - **Command prefix:** `,` (case-insensitive).
-- **Deployment:** the `super-mod` Heroku app (worker dyno).
+- **Deployment:** the `super-mod` [Heroku](https://www.heroku.com/) app (worker dyno).
 
 ## Features
 
