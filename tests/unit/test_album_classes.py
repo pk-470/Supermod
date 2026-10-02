@@ -42,14 +42,16 @@ def test_handle_input_slash_split():
     assert Album.handle_input("death/power") == ["Death", "Power"]
 
 
-@pytest.mark.xfail(reason="Group C #2: handle_input empty-token")
 def test_handle_input_empty_returns_empty_list():
     assert Album.handle_input("") == []
 
 
-@pytest.mark.xfail(reason="Group C #2: handle_input empty-token")
 def test_handle_input_whitespace_returns_empty_list():
     assert Album.handle_input("   ") == []
+
+
+def test_handle_input_drops_empty_items():
+    assert Album.handle_input("Rock, ") == ["Rock"]
 
 
 # --------------------------------------------------------------------------- #
@@ -173,8 +175,21 @@ def test_news_format_known_country():
     )
 
 
-@pytest.mark.xfail(reason="Group C #3: news_format unknown-country raises -> ERROR line")
-def test_news_format_unknown_country_no_error_line():
+def test_news_format_blank_country_is_reported_as_error():
+    # A release with no country is reported to staff instead of being posted.
+    rel = Release(
+        artist="foo",
+        title="bar",
+        genres="Rock",
+        release_date="2020",
+        countries="",
+    )
+    assert rel.news_format().startswith("**ERROR:**")
+
+
+def test_news_format_unknown_country_is_reported_as_error():
+    # An unrecognised country (often a typo) is reported to staff instead of
+    # being posted without its flag.
     rel = Release(
         artist="foo",
         title="bar",
@@ -182,6 +197,25 @@ def test_news_format_unknown_country_no_error_line():
         release_date="2020",
         countries="Atlantis",
     )
-    # Correct behavior: an unknown/missing flag must NOT degrade the whole
-    # line into an "**ERROR:**" message.
-    assert "**ERROR:**" not in rel.news_format()
+    assert rel.news_format().startswith("**ERROR:**")
+
+
+@pytest.mark.parametrize(
+    ("country", "flag"),
+    [
+        ("US", ":flag_us:"),
+        ("Bosnia", ":flag_ba:"),
+        ("Turkiye", ":flag_tr:"),
+        ("Czechia", ":flag_cz:"),
+    ],
+)
+def test_news_format_alternative_country_names(country, flag):
+    # Alternative names seen in the newsletter sheet.
+    rel = Release(
+        artist="foo",
+        title="bar",
+        genres="Rock",
+        release_date="2020",
+        countries=country,
+    )
+    assert rel.news_format().startswith(f"{flag}  | ")

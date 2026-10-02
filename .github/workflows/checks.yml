@@ -1,0 +1,18 @@
+# Lint, type check and test every push and pull request, with the exact tool
+# versions pinned in uv.lock (the same checks as .pre-commit-config.yaml).
+name: Checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - run: uv run ruff check
+      - run: uv run pyright
+      - run: uv run pytest -q

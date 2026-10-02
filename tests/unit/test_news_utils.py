@@ -186,6 +186,15 @@ def test_post_split_no_delimiter_no_chunk_exceeds_limit():
     text = "a" * 200
     chunks = post_split(text, 60)
     assert all(len(chunk) <= 60 for chunk in chunks)
+    # Hard cuts at the limit, losing nothing (not one-character chunks).
+    assert [len(chunk) for chunk in chunks] == [60, 60, 60, 20]
+    assert "".join(chunks) == text
+
+
+def test_post_split_never_returns_a_blank_chunk():
+    # Discord rejects blank messages, so a lone newline left over after a cut
+    # must not become a chunk of its own.
+    assert post_split("a" * 30 + "\n", 30) == ["a" * 30]
 
 
 def test_post_split_realistic_no_chunk_exceeds_limit():
@@ -195,11 +204,8 @@ def test_post_split_realistic_no_chunk_exceeds_limit():
     assert len(chunks) > 1
 
 
-@pytest.mark.xfail(reason="Group C #13: post_split drops a char on the punctuation-split branch")
 def test_post_split_punctuation_branch_reconstructs_input():
-    # CORRECT behavior: joining the chunks should reproduce the original text.
-    # The punctuation-split branch currently drops the character after the
-    # ``.``/``?``/``!`` (here the space), so this fails until that bug is fixed.
+    # Splitting after ``.``/``?``/``!`` must keep the character that follows.
     text = "a" * 40 + ". " + "b" * 40
     chunks = post_split(text, 50)
     assert "".join(chunks) == text

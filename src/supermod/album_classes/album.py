@@ -26,7 +26,9 @@ class Album:
     @classmethod
     def handle_input(cls, strings: str) -> list[str]:
         return [
-            cls.make_title(string) for string in strings.replace("/", ", ").split(", ")
+            cls.make_title(string)
+            for string in strings.replace("/", ", ").split(", ")
+            if string.strip()
         ]
 
     @classmethod

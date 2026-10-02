@@ -151,26 +151,25 @@ def news_by_genre(sheet_data: list[list[str]]) -> tuple[dict[str, str], str]:
 
 
 def post_split(long_post: str, max_post_length: int) -> list[str]:
-    """Split a long post into chunks within the max length."""
-    posts = [long_post]
+    """
+    Split a long post into chunks within the max length: at the last newline
+    (which is dropped), else just after the last '.', '?' or '!', else at the
+    max length.
+    """
+    posts = []
     while len(long_post) > max_post_length:
-        i = 1
-        while i < max_post_length and long_post[max_post_length - i] != "\n":
-            i = i + 1
-        if i < max_post_length:
-            split_at = max_post_length - i
+        window = long_post[:max_post_length]
+        newline = window.rfind("\n", 1)
+        if newline != -1:
+            chunk, long_post = long_post[:newline], long_post[newline + 1 :]
         else:
-            i = 1
-            while i < max_post_length and long_post[max_post_length - i] not in (
-                ".",
-                "?",
-                "!",
-            ):
-                i = i + 1
-            split_at = max_post_length - i + 1
-        posts.remove(long_post)
-        posts.extend([long_post[:split_at], long_post[split_at + 1 :]])
-        long_post = long_post[split_at + 1 :]
+            sentence_end = max(window.rfind(mark, 1) for mark in ".?!")
+            split_at = sentence_end + 1 if sentence_end != -1 else max_post_length
+            chunk, long_post = long_post[:split_at], long_post[split_at:]
+        if chunk.strip():  # Discord rejects blank messages
+            posts.append(chunk)
+    if long_post.strip() or not posts:
+        posts.append(long_post)
 
     return posts
 

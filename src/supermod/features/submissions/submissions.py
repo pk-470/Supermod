@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import re
 from asyncio.exceptions import TimeoutError
 from random import shuffle
 from typing import Optional
@@ -16,6 +17,16 @@ from supermod.features.submissions._constants import *
 from supermod.features.submissions._utils import *
 
 logger = logging.getLogger(__name__)
+
+# A masterlist post as built by Sub.masterlist_format:
+# "{title} _by_ {artist} ({year}) ({genres}) <@!{submitter id}>". The year and
+# genres are the last pair of bracketed groups, so an artist like
+# "Nirvana (UK)" may contain brackets itself.
+MASTERLIST_POST = re.compile(
+    r"(?P<title>.*?)_by_(?P<artist>.*)"
+    r"\((?P<year>[^()]*)\)\s*\((?P<genres>[^()]*)\)(?P<tail>.*)",
+    re.DOTALL,
+)
 
 
 class Submissions(
@@ -638,30 +649,20 @@ class Submissions(
 
     async def _masterlist_sub_make(self, post: str, masterlist: str) -> Sub:
         """Create a submission from a formatted masterlist post string."""
-        post_split_list = post.split("_by_")
-        sub_data = [post_split_list[0]]
-        post_split_list = post_split_list[1].split("(", 1)
-        sub_data.append(post_split_list[0])
-        post_split_list = post_split_list[1].split(")", 1)
-        sub_data.append(post_split_list[0])
-        post_split_list = post_split_list[1][2:].split(")")
-        sub_data.append(post_split_list[0])
-        sub_id = ""
-        for i in post_split_list[1]:
-            if i.isnumeric():
-                sub_id += i
-        sub_data.append(sub_id)
+        match = MASTERLIST_POST.fullmatch(post)
+        if match is None:
+            raise ValueError(f"Not a masterlist post: {post!r}")
+        sub_id = int("".join(c for c in match["tail"] if c.isnumeric()))
         # Prefer the member cache; only ask Discord for users it doesn't hold.
-        user = self.bot.get_user(int(sub_id)) or await self.bot.fetch_user(int(sub_id))
-        sub_data.append(user.display_name)
+        user = self.bot.get_user(sub_id) or await self.bot.fetch_user(sub_id)
 
         sub_album = Sub(
-            artist=sub_data[1],
-            title=sub_data[0],
-            genres=sub_data[3],
-            release_date=sub_data[2],
-            submitter_name=sub_data[5],
-            submitter_id=int(sub_data[4]),
+            artist=match["artist"],
+            title=match["title"],
+            genres=match["genres"],
+            release_date=match["year"],
+            submitter_name=user.display_name,
+            submitter_id=sub_id,
             masterlist=masterlist,
             message=None,
         )

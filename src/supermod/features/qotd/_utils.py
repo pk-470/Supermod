@@ -33,8 +33,14 @@ def qotd_get() -> Optional[list[str]]:
 
 def mark_as_used(question: list[str]) -> None:
     wks = qotd_wks()
-    cell = wks.find(question[2])
-    assert cell is not None
-    question_row = cell.row
-    current = wks.cell(question_row, 4).numeric_value or 0
-    wks.update_cell(question_row, 4, int(current) + 1)
+    rows = wks.get_all_values()
+    matches = [
+        row_no
+        for row_no, row in enumerate(rows, start=1)
+        if len(row) > 2 and row[2] == question[2]
+    ]
+    assert matches, f"Question not found in the sheet: {question[2]!r}"
+    # Some questions appear more than once, so mark the exact row that was
+    # picked (same type, repeatable flag and count), not just the first copy.
+    row_no = next((n for n in matches if rows[n - 1] == question), matches[0])
+    wks.update_cell(row_no, 4, use_count(rows[row_no - 1]) + 1)

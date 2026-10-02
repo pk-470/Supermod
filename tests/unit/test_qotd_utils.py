@@ -7,8 +7,6 @@ the ``set_worksheet`` fixture.
 
 from __future__ import annotations
 
-import pytest
-
 from supermod.features.qotd import _utils
 
 HEADER = ["ID", "Repeatable", "Question", "Used"]
@@ -112,7 +110,6 @@ def test_mark_as_used_increments_count_of_matched_row(set_worksheet):
     assert ws.rows[1][3] == 1
 
 
-@pytest.mark.xfail(reason="Group C #6: mark_as_used finds by text, marks the wrong (first) row on duplicates")
 def test_mark_as_used_marks_correct_row_with_duplicate_text(set_worksheet):
     # Two rows share identical question text. The caller passes the *second*
     # one (already used once), so its count should go 1 -> 2 while the first
@@ -129,3 +126,23 @@ def test_mark_as_used_marks_correct_row_with_duplicate_text(set_worksheet):
 
     assert ws.rows[2][3] == 2   # the intended (second) row incremented
     assert ws.rows[1][3] == ""  # first occurrence left untouched
+
+
+def test_duplicate_non_repeatable_question_is_used_up_once(set_worksheet):
+    # Real sheet layout: A = type, B = repeatable, C = text, D = used count.
+    # The first copy is already used; picking and marking the second copy must
+    # mark that copy, so the question doesn't keep coming back.
+    rows = [
+        ["", "Repeatable", "Message", ""],
+        ["Question", "N", "Same question?", "1"],
+        ["Question", "N", "Same question?", ""],
+    ]
+    ws = set_worksheet(_utils, "qotd_wks", rows)
+
+    picked = _utils.qotd_get()
+    assert picked is not None
+    assert picked == ["Question", "N", "Same question?", ""]
+    _utils.mark_as_used(picked)
+
+    assert [row[3] for row in ws.rows[1:]] == ["1", 1]
+    assert _utils.qotd_get() is None

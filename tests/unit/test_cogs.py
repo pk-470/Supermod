@@ -239,3 +239,56 @@ async def test_replace_with_already_deleted_post_still_submits(
         ["New", "Band", "2020", "Rock", "Fan", "42", "555"],
     ]
     message.add_reaction.assert_awaited_once_with("🆗")
+
+
+# --- masterlist post format <-> parser -----------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("title", "artist", "year", "genres"),
+    [
+        ("Album", "Band", "2020", "Rock"),
+        ("Live (Deluxe Edition)", "Band", "2020", "Rock"),
+        ("Album", "Nirvana (UK)", "1992", "Rock"),
+        ("Album", "Band", "2020", "Death Metal, Black Metal"),
+        ("A/B", "The Band", "1975", "Pop"),
+    ],
+)
+async def test_masterlist_post_parses_back_to_the_same_submission(
+    monkeypatch, title, artist, year, genres
+):
+    # The sheet rebuild reads masterlist posts back, so every post the bot
+    # writes must parse back into the same submission.
+    cog = _submissions_cog(monkeypatch, _text_channel())
+    sub = Sub(
+        artist=artist,
+        title=title,
+        genres=genres,
+        release_date=year,
+        submitter_name="Submitter",
+        submitter_id=42,
+        masterlist="new",
+    )
+
+    back = await cog._masterlist_sub_make(sub.masterlist_format(), "new")
+
+    assert (back.title, back.artist, back.release_date, back.genres) == (
+        sub.title,
+        sub.artist,
+        sub.release_date,
+        sub.genres,
+    )
+    assert back.submitter_id == 42
+    assert back.submitter_name == "Submitter"
+
+
+async def test_masterlist_parser_accepts_plain_user_mentions(monkeypatch):
+    cog = _submissions_cog(monkeypatch, _text_channel())
+    back = await cog._masterlist_sub_make("Album _by_ Band (2020) (Rock) <@42>", "new")
+    assert back.submitter_id == 42
+
+
+async def test_masterlist_parser_rejects_other_messages(monkeypatch):
+    cog = _submissions_cog(monkeypatch, _text_channel())
+    with pytest.raises(ValueError):
+        await cog._masterlist_sub_make("just some chat", "new")

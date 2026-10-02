@@ -47,6 +47,10 @@ class Release(Album):
 
     def news_format(self):
         try:
+            if not self.countries:
+                # Report it to staff like an unknown country, rather than
+                # posting the release without a flag.
+                raise ValueError("no country given")
             return (
                 "  ".join(
                     [DISCORD_COUNTRY_FLAGS[country] for country in self.countries]

@@ -74,7 +74,9 @@ class FakeWorksheet:
     # --- read -------------------------------------------------------------
 
     def get_all_values(self) -> list[list[str]]:
-        return [list(r) for r in self.rows]
+        # Like gspread, pad every row to the widest row's length.
+        width = max((len(r) for r in self.rows), default=0)
+        return [list(r) + [""] * (width - len(r)) for r in self.rows]
 
     def row_values(self, row: int) -> list[str]:
         if 1 <= row <= len(self.rows):
