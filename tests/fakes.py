@@ -57,6 +57,8 @@ class FakeWorksheet:
     def __init__(self, rows: Optional[list[list[str]]] = None, title: str = "Sheet1"):
         self.rows: list[list[str]] = [list(r) for r in (rows or [])]
         self.title = title
+        self.row_count = 1000  # grid size, as in gspread
+        self.write_count = 0  # API write calls made, for quota-sensitive tests
         # Named child worksheets, addressable by title or index.
         self._worksheets: dict[str, "FakeWorksheet"] = {}
 
@@ -99,17 +101,54 @@ class FakeWorksheet:
     # --- write ------------------------------------------------------------
 
     def update_cell(self, row: int, col: int, value) -> None:
+        self.write_count += 1
         self._ensure(row, col)
         self.rows[row - 1][col - 1] = value
 
+    def update(self, values, range_name: str = "A1") -> None:
+        """Write a 2D block starting at the range's top-left cell."""
+        self.write_count += 1
+        start_row, start_col = _a1_to_rowcol(range_name.split(":")[0])
+        for r, row_values in enumerate(values):
+            for c, value in enumerate(row_values):
+                self._ensure(start_row + r, start_col + c)
+                self.rows[start_row + r - 1][start_col + c - 1] = value
+
+    def batch_update(self, data) -> None:
+        """Write several ranges in one call (dicts with 'range' and 'values')."""
+        self.write_count += 1
+        for entry in data:
+            self.update(entry["values"], entry["range"])
+        self.write_count -= len(data)  # the nested update() calls aren't API calls
+
+    def batch_clear(self, ranges) -> None:
+        """Clear ranges like 'A5:G1000' (rows 5 onward, columns A-G)."""
+        self.write_count += 1
+        for a1 in ranges:
+            start, end = a1.split(":")
+            start_row, start_col = _a1_to_rowcol(start)
+            end_col = _a1_to_rowcol(end + "1")[1]
+            for row in self.rows[start_row - 1 :]:
+                for c in range(start_col - 1, min(end_col, len(row))):
+                    row[c] = ""
+        # Like gspread, get_all_values() omits trailing fully-empty rows.
+        while self.rows and not any(self.rows[-1]):
+            self.rows.pop()
+
+    def add_rows(self, rows: int) -> None:
+        self.row_count += rows
+
     def append_row(self, values) -> None:
+        self.write_count += 1
         self.rows.append(list(values))
 
     def delete_rows(self, row: int) -> None:
+        self.write_count += 1
         if 1 <= row <= len(self.rows):
             del self.rows[row - 1]
 
     def clear(self) -> None:
+        self.write_count += 1
         self.rows = []
 
     # --- spreadsheet-style access ----------------------------------------

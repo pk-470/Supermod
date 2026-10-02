@@ -145,9 +145,15 @@ class QOTD(Cog, description="Submit and retrieve a QOTD."):
     async def qotd_reset(self, ctx: Context):
         wks = qotd_wks()
         q_rows = wks.get_all_values()
-        for i, q_row in enumerate(q_rows[1:], start=2):
-            if q_row[2]:
-                wks.update_cell(i, 4, 0)
+        # One request for all questions: a write per row exceeds Google's
+        # per-minute write quota on a sheet this size.
+        reset = [
+            {"range": f"D{i}", "values": [[0]]}
+            for i, q_row in enumerate(q_rows[1:], start=2)
+            if len(q_row) > 2 and q_row[2]
+        ]
+        if reset:
+            wks.batch_update(reset)
 
         await ctx.send("Number of uses for all questions set to 0.")
 

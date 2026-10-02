@@ -1,6 +1,9 @@
+import asyncio
+import datetime
 import logging
 import re
 from asyncio.exceptions import TimeoutError
+from typing import Optional
 
 import pendulum
 from discord import Message, NotFound, TextChannel
@@ -14,6 +17,15 @@ from supermod.features.promotions._utils import *
 
 logger = logging.getLogger(__name__)
 
+# The top of every hour. Fixed clock times, unlike a 60-minute interval, don't
+# shift when the dyno restarts, which could otherwise process an hour twice.
+# Toronto's UTC offset is a whole number of hours, so the top of each UTC hour
+# is also the top of the Toronto hour.
+PROMO_TIMES = [datetime.time(hour=h, tzinfo=datetime.timezone.utc) for h in range(24)]
+
+PROMO_READ_ATTEMPTS = 3
+PROMO_READ_RETRY_SECONDS = 60
+
 
 class Promotions(
     Cog, description="Set up promotions for #creators-friends-and-partners."
@@ -26,16 +38,18 @@ class Promotions(
         else:
             self.promos_loop.start()
 
-    @tasks.loop(minutes=60)
+    @tasks.loop(time=PROMO_TIMES)
     async def promos_loop(self):
         time_now = pendulum.now("America/Toronto")
-        promos_as_lists = promos_wks().get_all_values()[1:]
+        promos_as_lists = await self._read_promos()
+        if promos_as_lists is None:
+            return
         for promo_as_list in promos_as_lists:
             try:
                 promo_as_list = [i.strip() for i in promo_as_list]
                 promo_as_list[5] = promo_as_list[5].split(":")[0]
                 if promo_as_list[4].lower().startswith("last"):
-                    promo_as_list[4] = time_now.last_of("month").day
+                    promo_as_list[4] = str(time_now.last_of("month").day)
                 if (time_now.day, time_now.hour) == (
                     int(promo_as_list[4]),
                     int(promo_as_list[5]),
@@ -99,6 +113,28 @@ class Promotions(
             except Exception:
                 logger.exception("Error processing promo row %s.", promo_as_list)
                 continue
+
+    async def _read_promos(self) -> Optional[list[list[str]]]:
+        """Read the promo rows, retrying through brief Google outages."""
+        for attempt in range(1, PROMO_READ_ATTEMPTS + 1):
+            try:
+                return promos_wks().get_all_values()[1:]
+            except Exception as e:
+                if attempt == PROMO_READ_ATTEMPTS:
+                    logger.exception(
+                        "Could not read the promos sheet; skipping this hour."
+                    )
+                    return None
+                logger.warning(
+                    "Could not read the promos sheet (attempt %s of %s): %s. "
+                    "Retrying in %ss.",
+                    attempt,
+                    PROMO_READ_ATTEMPTS,
+                    e,
+                    PROMO_READ_RETRY_SECONDS,
+                )
+                await asyncio.sleep(PROMO_READ_RETRY_SECONDS)
+        return None
 
     @promos_loop.before_loop
     async def before_promos_loop(self) -> None:

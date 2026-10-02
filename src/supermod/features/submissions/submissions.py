@@ -4,7 +4,7 @@ from asyncio.exceptions import TimeoutError
 from random import shuffle
 from typing import Optional
 
-from discord import AllowedMentions, Message
+from discord import AllowedMentions, Message, NotFound
 from discord.abc import Messageable
 from discord.ext import commands, tasks
 from discord.ext.commands import Bot, Cog, Context
@@ -27,6 +27,9 @@ class Submissions(
         self.bot = bot
         self.sheet_updating: bool = False
         self.masterlist_updating: bool = False
+        # Serialises sheet and masterlist writes, so an approval can't land in
+        # the middle of a rebuild.
+        self.sheet_lock = asyncio.Lock()
 
         if is_local():
             logger.info("Submission sheets will not be updated (local mode).")
@@ -444,65 +447,75 @@ class Submissions(
 
     async def _submit_album(self, sub: Sub):
         """Submit an album."""
-
-        # If the submitter asks for a replacement:
-        if sub.request == "replace":
-            wks = subs_sheet().worksheet(sub.masterlist.upper())
-            # Locate the submitter in the spreadsheet.
-            prev_sub_cell = wks.find(f"{sub.submitter_id}")
-            if prev_sub_cell is not None:
-                # If the submitter is in the spreadsheet, locate the message id of
-                # their previous submission in the same row as their user id.
-                prev_sub_row = prev_sub_cell.row
-                prev_sub_msg_id = wks.acell(f"G{prev_sub_row}").value
-                assert prev_sub_msg_id is not None
-                prev_sub_msg_id = int(prev_sub_msg_id)
-                # Get the channel corresponding to the requested masterlist and delete
-                # their previous submission.
-                channel = text_channel(
-                    self.bot, MASTERLIST_CHANNEL_DICT[sub.masterlist]
-                )
-                if channel is None:
-                    logger.warning(
-                        "_submit_album: masterlist channel for %s not found; "
-                        "skipping replacement of previous submission.",
-                        sub.masterlist,
+        async with self.sheet_lock:
+            # If the submitter asks for a replacement:
+            if sub.request == "replace":
+                wks = subs_sheet().worksheet(sub.masterlist.upper())
+                # Locate the submitter in the spreadsheet.
+                prev_sub_cell = wks.find(f"{sub.submitter_id}")
+                if prev_sub_cell is not None:
+                    # If the submitter is in the spreadsheet, locate the message id of
+                    # their previous submission in the same row as their user id.
+                    prev_sub_row = prev_sub_cell.row
+                    prev_sub_msg_id = wks.acell(f"G{prev_sub_row}").value
+                    assert prev_sub_msg_id is not None
+                    prev_sub_msg_id = int(prev_sub_msg_id)
+                    # Get the channel corresponding to the requested masterlist and delete
+                    # their previous submission.
+                    channel = text_channel(
+                        self.bot, MASTERLIST_CHANNEL_DICT[sub.masterlist]
                     )
-                else:
-                    prev_sub_msg = await channel.fetch_message(prev_sub_msg_id)
-                    await prev_sub_msg.delete()
-                    # Delete their submission from the spreadsheet.
-                    wks.delete_rows(prev_sub_row)
+                    if channel is None:
+                        logger.warning(
+                            "_submit_album: masterlist channel for %s not found; "
+                            "skipping replacement of previous submission.",
+                            sub.masterlist,
+                        )
+                    else:
+                        try:
+                            prev_sub_msg = await channel.fetch_message(prev_sub_msg_id)
+                            await prev_sub_msg.delete()
+                        except NotFound:
+                            # Already deleted (e.g. by hand); just drop the row.
+                            logger.info(
+                                "_submit_album: previous %s submission %s by %s was "
+                                "already deleted.",
+                                sub.masterlist,
+                                prev_sub_msg_id,
+                                sub.submitter_id,
+                            )
+                        # Delete their submission from the spreadsheet.
+                        wks.delete_rows(prev_sub_row)
 
-        # Submit the album in the requested masterlist.
-        masterlist_channel = text_channel(
-            self.bot, MASTERLIST_CHANNEL_DICT[sub.masterlist]
-        )
-        if masterlist_channel is None:
-            logger.warning(
-                "_submit_album: masterlist channel for %s not found; "
-                "cannot submit album.",
-                sub.masterlist,
+            # Submit the album in the requested masterlist.
+            masterlist_channel = text_channel(
+                self.bot, MASTERLIST_CHANNEL_DICT[sub.masterlist]
             )
-            return
-        sub_msg = await masterlist_channel.send(
-            sub.masterlist_format(), allowed_mentions=AllowedMentions.none()
-        )
-        # Add the submission to the spreadsheet.
-        subs_sheet().worksheet(sub.masterlist.upper()).append_row(
-            [
-                sub.title,
-                sub.artist,
-                sub.release_date,
-                ", ".join(sub.genres),
-                sub.submitter_name,
-                f"{sub.submitter_id}",
-                f"{sub_msg.id}",
-            ]
-        )
-        # Mark the submission as accepted.
-        assert sub.message is not None
-        await sub.message.add_reaction("🆗")
+            if masterlist_channel is None:
+                logger.warning(
+                    "_submit_album: masterlist channel for %s not found; "
+                    "cannot submit album.",
+                    sub.masterlist,
+                )
+                return
+            sub_msg = await masterlist_channel.send(
+                sub.masterlist_format(), allowed_mentions=AllowedMentions.none()
+            )
+            # Add the submission to the spreadsheet.
+            subs_sheet().worksheet(sub.masterlist.upper()).append_row(
+                [
+                    sub.title,
+                    sub.artist,
+                    sub.release_date,
+                    ", ".join(sub.genres),
+                    sub.submitter_name,
+                    f"{sub.submitter_id}",
+                    f"{sub_msg.id}",
+                ]
+            )
+            # Mark the submission as accepted.
+            assert sub.message is not None
+            await sub.message.add_reaction("🆗")
 
     async def _subs_check_msg(
         self, ctx: Context, masterlist: Optional[str]
@@ -638,7 +651,8 @@ class Submissions(
             if i.isnumeric():
                 sub_id += i
         sub_data.append(sub_id)
-        user = await self.bot.fetch_user(int(sub_id))
+        # Prefer the member cache; only ask Discord for users it doesn't hold.
+        user = self.bot.get_user(int(sub_id)) or await self.bot.fetch_user(int(sub_id))
         sub_data.append(user.display_name)
 
         sub_album = Sub(
@@ -671,24 +685,29 @@ class Submissions(
             )
             return
 
-        subs_wks = subs_sheet().worksheet(masterlist.upper())
-        subs_wks.clear()
-        problem_subs = []
-        subs_wks.append_row(
-            [
-                "Title",
-                "Artist",
-                "Year",
-                "Genre",
-                "Submitter Name",
-                "Submitter ID",
-                "Message ID",
+        async with self.sheet_lock:
+            rows = [
+                [
+                    "Title",
+                    "Artist",
+                    "Year",
+                    "Genre",
+                    "Submitter Name",
+                    "Submitter ID",
+                    "Message ID",
+                ]
             ]
-        )
-        async for msg in masterlist_channel.history():
-            try:
-                sub = await self._masterlist_sub_make(msg.content, masterlist)
-                subs_wks.append_row(
+            problem_subs = []
+            async for msg in masterlist_channel.history():
+                try:
+                    sub = await self._masterlist_sub_make(msg.content, masterlist)
+                except Exception:
+                    logger.exception(
+                        "Could not transfer submission %s to sheet.", msg.id
+                    )
+                    problem_subs.append(msg.jump_url)
+                    continue
+                rows.append(
                     [
                         sub.title,
                         sub.artist,
@@ -699,10 +718,15 @@ class Submissions(
                         f"{msg.id}",
                     ]
                 )
-                await asyncio.sleep(1)
-            except Exception:
-                logger.exception("Could not transfer submission %s to sheet.", msg.id)
-                problem_subs.append(msg.jump_url)
+
+            # Write everything in one call, then clear any leftover rows below,
+            # so a Google error can't leave the sheet empty or half-written.
+            subs_wks = subs_sheet().worksheet(masterlist.upper())
+            if len(rows) > subs_wks.row_count:
+                subs_wks.add_rows(len(rows) - subs_wks.row_count)
+            subs_wks.update(values=rows, range_name=f"A1:G{len(rows)}")
+            if len(rows) < subs_wks.row_count:
+                subs_wks.batch_clear([f"A{len(rows) + 1}:G{subs_wks.row_count}"])
 
         logger.info("%s sheet updated.", masterlist.upper())
         await ctx.send(f"{masterlist.upper()} sheet updated.")
@@ -728,25 +752,26 @@ class Submissions(
                 f"Could not find the {masterlist.upper()} channel. Skipping."
             )
             return
-        await channel.purge(limit=100)
-        subs_wks = subs_sheet().worksheet(masterlist.upper())
-        albums = subs_wks.get_all_values()[1:]
-        shuffle(albums)
-        for album in albums:
-            sub = Sub(
-                artist=album[1],
-                title=album[0],
-                genres=album[3],
-                release_date=album[2],
-                submitter_name=album[4],
-                submitter_id=album[5],
-                masterlist=masterlist,
-                message=None,
-            )
+        async with self.sheet_lock:
+            await channel.purge(limit=100)
+            subs_wks = subs_sheet().worksheet(masterlist.upper())
+            albums = subs_wks.get_all_values()[1:]
+            shuffle(albums)
+            for album in albums:
+                sub = Sub(
+                    artist=album[1],
+                    title=album[0],
+                    genres=album[3],
+                    release_date=album[2],
+                    submitter_name=album[4],
+                    submitter_id=album[5],
+                    masterlist=masterlist,
+                    message=None,
+                )
 
-            await channel.send(
-                sub.masterlist_format(), allowed_mentions=AllowedMentions.none()
-            )
+                await channel.send(
+                    sub.masterlist_format(), allowed_mentions=AllowedMentions.none()
+                )
 
         logger.info(
             "%s masterlist has been updated in a random order.", masterlist.upper()

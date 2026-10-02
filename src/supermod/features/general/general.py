@@ -12,6 +12,14 @@ from supermod.features.general._constants import *
 
 logger = logging.getLogger(__name__)
 
+# Channels with a message history the exporter can read (forum posts are threads).
+ARCHIVABLE_CHANNELS = (
+    discord.TextChannel,
+    discord.Thread,
+    discord.VoiceChannel,
+    discord.StageChannel,
+)
+
 
 class General(Cog, description="General commands"):
     def __init__(self, bot: Bot):
@@ -37,12 +45,15 @@ class General(Cog, description="General commands"):
         else:
             try:
                 channel = self.bot.get_channel(int(channel_id))
-            except ValueError:
+                if channel is None:
+                    # Archived threads are not cached; ask the API for them.
+                    channel = await self.bot.fetch_channel(int(channel_id))
+            except (ValueError, discord.NotFound, discord.Forbidden):
                 await ctx.send("Please specify a valid channel id.")
                 return
 
-        if not isinstance(channel, discord.TextChannel):
-            await ctx.send("Please specify a valid text channel id.")
+        if not isinstance(channel, ARCHIVABLE_CHANNELS):
+            await ctx.send("Please specify a valid channel id.")
             return
 
         # export() swallows errors and returns None unless raise_exceptions=True,
@@ -51,7 +62,9 @@ class General(Cog, description="General commands"):
         try:
             async with ctx.typing():
                 transcript = await chat_exporter.export(
-                    channel, bot=self.bot, raise_exceptions=True
+                    channel,  # pyright: ignore[reportArgumentType]
+                    bot=self.bot,
+                    raise_exceptions=True,
                 )
         except Exception:
             logger.exception("Failed to export channel %s for archiving.", channel.id)
