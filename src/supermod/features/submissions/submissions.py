@@ -4,7 +4,7 @@ from asyncio.exceptions import TimeoutError
 from random import shuffle
 from typing import Optional
 
-from discord import Message
+from discord import AllowedMentions, Message
 from discord.abc import Messageable
 from discord.ext import commands, tasks
 from discord.ext.commands import Bot, Cog, Context
@@ -485,7 +485,9 @@ class Submissions(
                 sub.masterlist,
             )
             return
-        sub_msg = await masterlist_channel.send(sub.masterlist_format())
+        sub_msg = await masterlist_channel.send(
+            sub.masterlist_format(), allowed_mentions=AllowedMentions.none()
+        )
         # Add the submission to the spreadsheet.
         subs_sheet().worksheet(sub.masterlist.upper()).append_row(
             [
@@ -742,7 +744,9 @@ class Submissions(
                 message=None,
             )
 
-            await channel.send(sub.masterlist_format())
+            await channel.send(
+                sub.masterlist_format(), allowed_mentions=AllowedMentions.none()
+            )
 
         logger.info(
             "%s masterlist has been updated in a random order.", masterlist.upper()

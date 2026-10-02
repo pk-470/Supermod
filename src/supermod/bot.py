@@ -20,7 +20,12 @@ class Supermod(Bot):
             command_prefix=",",
             case_insensitive=True,
             intents=intents,
-            allowed_mentions=AllowedMentions.none(),
+            # Users may be pinged (e.g. ,my_subs, promos); @everyone and roles
+            # may not, except where a send explicitly opts in (the Listeners
+            # role in the weekly submissions status announcements).
+            allowed_mentions=AllowedMentions(
+                everyone=False, roles=False, users=True, replied_user=True
+            ),
         )
 
     async def setup_hook(self) -> None:

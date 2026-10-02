@@ -1,6 +1,7 @@
 import logging
 
 import pendulum
+from discord import AllowedMentions, Object
 from discord.ext import tasks
 from discord.ext.commands import Bot, Cog
 
@@ -9,6 +10,20 @@ from supermod._utils import text_channel
 from supermod.features.submissions_status._constants import *
 
 logger = logging.getLogger(__name__)
+
+# The bot-wide default blocks role pings; these announcements opt back in for
+# the Listeners role only.
+LISTENERS_PING = AllowedMentions(
+    everyone=False, users=False, roles=[Object(id=LISTENERS_ROLE)]
+)
+
+
+def channel_mention(channel_id: int) -> str:
+    """
+    Mention a channel by id. Unlike resolving it first, this works for any
+    channel type (forum, voice, etc.), which is all a link in a message needs.
+    """
+    return f"<#{channel_id}>"
 
 
 class SubmissionsStatus(Cog):
@@ -30,74 +45,53 @@ class SubmissionsStatus(Cog):
                 and time_now.hour == SUBMISSIONS_OPEN_HOUR
                 and time_now.minute == SUBMISSIONS_OPEN_MINUTE
             ):
-                announcements_channel = text_channel(self.bot, ANNOUNCEMENTS_CHANNEL)
-                ol_weekly_playlist_channel = text_channel(
-                    self.bot, OL_WEEKLY_PLAYLIST_CHANNEL
-                )
-                input_ratings_here_channel = text_channel(
-                    self.bot, INPUT_RATINGS_HERE_CHANNEL
-                )
-                faqs_channel = text_channel(self.bot, FAQS_CHANNEL)
-                talk_to_the_staff_channel = text_channel(
-                    self.bot, TALK_TO_THE_STAFF_CHANNEL
-                )
-                if (
-                    announcements_channel is None
-                    or ol_weekly_playlist_channel is None
-                    or input_ratings_here_channel is None
-                    or faqs_channel is None
-                    or talk_to_the_staff_channel is None
-                ):
-                    logger.warning(
-                        "Submissions status loop: a required channel could not be "
-                        "resolved for the 'open' announcement; skipping this tick."
-                    )
-                    return
-                await announcements_channel.send(
+                await self._announce(
+                    "open",
                     f"Hello {LISTENERS_ROLE_MENTION}! "
                     + "Voting has closed and our new weekly picks are now available in the Albums Under Review category, "
-                    + f"located below {ol_weekly_playlist_channel.mention}."
-                    + f" When you have listened to an album in full, head to {input_ratings_here_channel.mention} "
+                    + f"located below {channel_mention(OL_WEEKLY_PLAYLIST_CHANNEL)}."
+                    + f" When you have listened to an album in full, head to {channel_mention(INPUT_RATINGS_HERE_CHANNEL)} "
                     + "and submit your score. "
-                    + f"Check the {faqs_channel.mention} and the individual channel descriptions, "
-                    + f"or head to {talk_to_the_staff_channel.mention} if you need further assistance."
-                )
-                logger.info(
-                    "'Submissions is open' message has been posted (date: %s).",
-                    time_now.strftime("%Y-%m-%d"),
+                    + f"Check the {channel_mention(FAQS_CHANNEL)} and the individual channel descriptions, "
+                    + f"or head to {channel_mention(TALK_TO_THE_STAFF_CHANNEL)} if you need further assistance.",
+                    time_now,
                 )
             if (
                 time_now.strftime("%A") == SUBMISSIONS_CLOSED_DAY
                 and time_now.hour == SUBMISSIONS_CLOSED_HOUR
                 and time_now.minute == SUBMISSIONS_CLOSED_MINUTE
             ):
-                announcements_channel = text_channel(self.bot, ANNOUNCEMENTS_CHANNEL)
-                submissions_channel = text_channel(self.bot, SUBMISSIONS_CHANNEL)
-                voted_channel = text_channel(self.bot, VOTED_CHANNEL)
-                if (
-                    announcements_channel is None
-                    or submissions_channel is None
-                    or voted_channel is None
-                ):
-                    logger.warning(
-                        "Submissions status loop: a required channel could not be "
-                        "resolved for the 'closed' announcement; skipping this tick."
-                    )
-                    return
-                await announcements_channel.send(
+                await self._announce(
+                    "closed",
                     f"Hello {LISTENERS_ROLE_MENTION}! "
-                    + f"{submissions_channel.mention} is now closed and voting is open. "
-                    + f"Head to {voted_channel.mention} where you can vote up to 5 albums "
+                    + f"{channel_mention(SUBMISSIONS_CHANNEL)} is now closed and voting is open. "
+                    + f"Head to {channel_mention(VOTED_CHANNEL)} where you can vote up to 5 albums "
                     + "using the :thumbsup: emoji. The winning album will be revealed along with the random picks "
-                    + "during the upcoming weekend and will be reviewed next week."
-                )
-                logger.info(
-                    "'Submissions is closed' message has been posted (date: %s).",
-                    time_now.strftime("%Y-%m-%d"),
+                    + "during the upcoming weekend and will be reviewed next week.",
+                    time_now,
                 )
         except Exception:
             logger.exception("Submissions status loop encountered an error.")
             return
+
+    async def _announce(
+        self, status: str, message: str, time_now: pendulum.DateTime
+    ) -> None:
+        announcements_channel = text_channel(self.bot, ANNOUNCEMENTS_CHANNEL)
+        if announcements_channel is None:
+            logger.error(
+                "Submissions status loop: announcements channel %s could not be "
+                "resolved; the '%s' announcement was not posted.",
+                ANNOUNCEMENTS_CHANNEL,
+                status,
+            )
+            return
+        await announcements_channel.send(message, allowed_mentions=LISTENERS_PING)
+        logger.info(
+            "'Submissions is %s' message has been posted (date: %s).",
+            status,
+            time_now.strftime("%Y-%m-%d"),
+        )
 
     @submissions_status.before_loop
     async def before_submissions_status(self):
