@@ -72,6 +72,20 @@ def test_qotd_get_returns_none_when_pool_empty(monkeypatch, set_worksheet):
     assert _utils.qotd_get() is None
 
 
+def test_qotd_get_treats_zero_count_as_unused(set_worksheet):
+    # ,qotd_reset writes 0 to every row, which must make them eligible again.
+    rows = [HEADER, ["1", "N", "Reset question", "0"]]
+    set_worksheet(_utils, "qotd_wks", rows)
+    assert _utils.qotd_get() == ["1", "N", "Reset question", "0"]
+
+
+def test_qotd_get_handles_missing_count_column(set_worksheet):
+    # With column D blank throughout (header included), rows have only 3 cells.
+    rows = [["", "Repeatable", "Message"], ["1", "N", "Only question"]]
+    set_worksheet(_utils, "qotd_wks", rows)
+    assert _utils.qotd_get() == ["1", "N", "Only question"]
+
+
 def test_qotd_get_returns_none_when_sheet_empty(set_worksheet):
     set_worksheet(_utils, "qotd_wks", [])
     assert _utils.qotd_get() is None
